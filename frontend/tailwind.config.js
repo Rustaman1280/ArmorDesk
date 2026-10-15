@@ -9,23 +9,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#090D16',
-        card: '#0F172A',
-        cardBorder: '#1E293B',
-        accentBorder: '#334155',
-        primary: '#3B82F6',
-        emerald: {
-          500: '#10B981',
-          900: '#064E3B',
+        canvas: '#09090B',
+        surface: {
+          DEFAULT: '#111114',
+          subtle: '#0E0E11',
+          elevated: '#18181C',
+          hover: '#1F1F24',
+          active: '#27272E',
         },
-        amber: {
-          500: '#F59E0B',
-          900: '#78350F',
+        border: {
+          hairline: 'rgba(255, 255, 255, 0.07)',
+          subtle: 'rgba(255, 255, 255, 0.12)',
         },
-        rose: {
-          500: '#F43F5E',
-          900: '#881337',
-        }
+      },
+      fontFamily: {
+        sans: ['Geist Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['Geist Mono', 'JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
+      },
+      boxShadow: {
+        'hairline': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.06)',
+        'elevated': '0 1px 2px 0 rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)',
       },
     },
   },
