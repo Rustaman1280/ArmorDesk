@@ -153,3 +153,26 @@ class ConfigResponse(BaseModel):
     sdk_version: Optional[str] = "0.6.10"
     backend_url: Optional[str] = "https://staging-api.armoriq.ai"
     account_email: Optional[str] = "rustamandelvianova@gmail.com"
+
+class MCPToolDefinition(BaseModel):
+    name: str
+    description: str
+    inputSchema: Dict[str, Any]
+
+class MCPGatewayInfo(BaseModel):
+    gateway_url: str
+    sse_url: str
+    protocol_version: str
+    tenant_id: str
+    api_key_masked: str
+    governed_tools: List[MCPToolDefinition]
+    connected_agents: List[Dict[str, Any]]
+    sample_configs: Dict[str, Any]
+
+class MCPTestToolRequest(BaseModel):
+    tool: str
+    arguments: Dict[str, Any]
+    user_role: str = "manager"
+    user_name: str = "Sarah Chen"
+    tenant_id: str = "acme-corp"
+

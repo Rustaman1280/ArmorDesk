@@ -14,7 +14,8 @@ import {
   Compass,
   Server,
   Activity,
-  Radio
+  Radio,
+  Plug
 } from "lucide-react";
 
 export function Sidebar() {
@@ -27,9 +28,16 @@ export function Sidebar() {
       items: [
         {
           href: "/overview",
-          label: "Overview & Crew Graph",
+          label: "Live Telemetry & Fleet",
           icon: Layers,
           badge: null,
+        },
+        {
+          href: "/connect",
+          label: "Connect & MCP Gateway",
+          icon: Plug,
+          badge: "MCP v1",
+          badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
         },
         {
           href: "/inbox",

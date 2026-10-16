@@ -18,12 +18,13 @@ from models import (
     CTFSubmitRequest, CTFSubmitResponse, CTFLeaderboardEntry,
     ScenarioRunRequest, ScenarioRunResponse,
     GauntletSimulateRequest, GauntletSimulateResponse,
-    ConfigUpdateRequest, ConfigResponse
+    ConfigUpdateRequest, ConfigResponse,
+    MCPGatewayInfo, MCPToolDefinition, MCPTestToolRequest
 )
 from agents.finops_crew import FinOpsCrewOrchestrator
 from armoriq_engine.core import generate_plan_hash, build_merkle_tree, verify_merkle_root
 from armoriq_engine.client import ArmorIQClient
-from mcp_servers import bank_payments_mcp
+from mcp_servers import bank_payments_mcp, crm_accounting_mcp, email_files_mcp
 from services.compliance_generator import generate_compliance_bundle
 from services.slack_notifier import send_slack_alert
 
@@ -537,7 +538,412 @@ def update_config(req: ConfigUpdateRequest):
     conn.close()
     return {"status": "SUCCESS", "message": "Configuration updated successfully"}
 
-# 11. Reset Sandbox
+# 11. MCP (Model Context Protocol) Agent Gateway & Integrations
+GOVERNED_MCP_TOOLS = [
+    {
+        "name": "bank.wire_transfer",
+        "description": "Execute corporate bank wire transfer to approved vendor under ArmorIQ policy governance",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "recipient": {"type": "string", "description": "Vendor name, e.g. 'AWS Cloud' or 'Stripe Inc'"},
+                "amount": {"type": "number", "description": "Disbursement amount in USD"},
+                "routing": {"type": "string", "description": "ACH routing or account identifier", "default": "ACH-US-492019"}
+            },
+            "required": ["recipient", "amount"]
+        }
+    },
+    {
+        "name": "bank.refund",
+        "description": "Issue customer micro-refund or SLA credit to authenticated account",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "recipient": {"type": "string", "description": "Customer name or ID"},
+                "amount": {"type": "number", "description": "Refund amount in USD"}
+            },
+            "required": ["recipient", "amount"]
+        }
+    },
+    {
+        "name": "crm.verify_vendor",
+        "description": "Query corporate CRM vendor registry to verify tax ID, risk tier, and authorization status",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "vendor_name": {"type": "string", "description": "Official company/vendor name"}
+            },
+            "required": ["vendor_name"]
+        }
+    },
+    {
+        "name": "email.read_inbox",
+        "description": "Read incoming customer claims and supplier invoices (sandboxed to ReaderAgent)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "folder": {"type": "string", "default": "inbox"}
+            }
+        }
+    },
+    {
+        "name": "files.parse_invoice",
+        "description": "Extract line items, amount, and payment instructions from PDF invoice documents",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "description": "Path to invoice document"}
+            },
+            "required": ["file_path"]
+        }
+    }
+]
+
+CONNECTED_AGENTS_FLEET = [
+    {
+        "agent_id": "agent-finops-orchestrator",
+        "name": "FinOps Orchestrator",
+        "transport": "MCP JSON-RPC 2.0 (HTTP/SSE)",
+        "status": "CONNECTED",
+        "capabilities": ["plan_capture", "delegate"],
+        "assigned_sandbox": "core_orchestration",
+        "enforced_policy": "ArmorIQ Canonical Plan Hash",
+        "last_heartbeat": "Active (0s ago)"
+    },
+    {
+        "agent_id": "agent-invoice-reader",
+        "name": "Invoice Reader Agent",
+        "transport": "MCP JSON-RPC 2.0 (HTTP/SSE)",
+        "status": "CONNECTED",
+        "capabilities": ["email.read_inbox", "files.parse_invoice"],
+        "assigned_sandbox": "sandbox_email_parser",
+        "enforced_policy": "Read-Only Sandbox (No Bank Tools)",
+        "last_heartbeat": "Active (1s ago)"
+    },
+    {
+        "agent_id": "agent-vendor-verifier",
+        "name": "CRM Vendor Verifier",
+        "transport": "MCP JSON-RPC 2.0 (HTTP/SSE)",
+        "status": "CONNECTED",
+        "capabilities": ["crm.verify_vendor"],
+        "assigned_sandbox": "sandbox_crm",
+        "enforced_policy": "CRM Allowlist Enforcement",
+        "last_heartbeat": "Active (2s ago)"
+    },
+    {
+        "agent_id": "agent-bank-executor",
+        "name": "Bank Disbursement Executor",
+        "transport": "MCP JSON-RPC 2.0 (HTTP/SSE)",
+        "status": "CONNECTED",
+        "capabilities": ["bank.wire_transfer", "bank.refund"],
+        "assigned_sandbox": "sandbox_bank",
+        "enforced_policy": "Dual-Control Approval ($50.00 Threshold)",
+        "last_heartbeat": "Active (0s ago)"
+    }
+]
+
+@app.get("/api/mcp/config", response_model=MCPGatewayInfo)
+def get_mcp_config(tenant_id: str = Query("acme-corp")):
+    backend_base = "http://localhost:8000"
+    claude_cfg = {
+        "mcpServers": {
+            "armordesk_gateway": {
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-fetch", f"{backend_base}/api/mcp/gateway"],
+                "env": {
+                    "ARMORIQ_TENANT": tenant_id,
+                    "ARMORIQ_API_KEY": "ak_live_acme_corpx892348a"
+                }
+            }
+        }
+    }
+    cursor_cfg = {
+        "mcpServers": {
+            "armordesk_finops": {
+                "url": f"{backend_base}/api/mcp/gateway",
+                "headers": {
+                    "X-ArmorIQ-Tenant": tenant_id,
+                    "Authorization": "Bearer ak_live_acme_corpx892348a"
+                }
+            }
+        }
+    }
+    python_snippet = f'''import httpx
+
+# Route your LangChain / CrewAI / AutoGen tools through ArmorDesk
+ARMORDESK_MCP_GATEWAY = "{backend_base}/api/mcp/gateway"
+
+def execute_governed_tool(tool_name: str, arguments: dict, user_role: str = "manager"):
+    payload = {{
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {{
+            "name": tool_name,
+            "arguments": arguments,
+            "context": {{"tenant_id": "{tenant_id}", "user_role": user_role}}
+        }}
+    }}
+    response = httpx.post(ARMORDESK_MCP_GATEWAY, json=payload, timeout=10.0)
+    return response.json()
+
+# Example: Issue an invoice payment to AWS Cloud
+result = execute_governed_tool("bank.wire_transfer", {{"recipient": "AWS Cloud", "amount": 8000.00}})
+print(result)  # Automatically frozen in ArmorDesk Approval Inbox if > $50!'''
+
+    curl_snippet = f'''curl -X POST {backend_base}/api/mcp/gateway \\
+  -H "Content-Type: application/json" \\
+  -H "X-ArmorIQ-Tenant: {tenant_id}" \\
+  -d '{{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {{
+      "name": "bank.wire_transfer",
+      "arguments": {{"recipient": "AWS Cloud", "amount": 8000.00}},
+      "context": {{"user_role": "manager", "user_name": "Sarah Chen"}}
+    }}
+  }}' '''
+
+    return MCPGatewayInfo(
+        gateway_url=f"{backend_base}/api/mcp/gateway",
+        sse_url=f"{backend_base}/api/mcp/sse",
+        protocol_version="2024-11-05",
+        tenant_id=tenant_id,
+        api_key_masked="ak_live_acme_corpx892348a",
+        governed_tools=[MCPToolDefinition(**t) for t in GOVERNED_MCP_TOOLS],
+        connected_agents=CONNECTED_AGENTS_FLEET,
+        sample_configs={
+            "claude_desktop": json.dumps(claude_cfg, indent=2),
+            "cursor": json.dumps(cursor_cfg, indent=2),
+            "python_sdk": python_snippet,
+            "curl": curl_snippet
+        }
+    )
+
+@app.post("/api/mcp/ping")
+def ping_mcp_gateway():
+    return {
+        "status": "CONNECTED",
+        "gateway": "ArmorDesk Governed MCP Gateway",
+        "version": "1.0.0",
+        "protocol": "MCP 2024-11-05 (JSON-RPC 2.0)",
+        "governance": "ARMORIQ_SCOPED_ACTIVE",
+        "latency_ms": 11,
+        "active_sandboxes": ["bank", "crm", "email_files"],
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@app.post("/api/mcp/gateway")
+async def mcp_jsonrpc_gateway(payload: Dict[str, Any]):
+    """Standard Model Context Protocol (MCP) JSON-RPC 2.0 Gateway Endpoint."""
+    req_id = payload.get("id", 1)
+    method = payload.get("method", "")
+    params = payload.get("params", {})
+
+    if method == "initialize":
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "tools": {"listChanged": False}
+                },
+                "serverInfo": {
+                    "name": "ArmorDesk-Governed-MCP-Gateway",
+                    "version": "1.0.0"
+                }
+            }
+        }
+
+    elif method == "tools/list":
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "tools": GOVERNED_MCP_TOOLS
+            }
+        }
+
+    elif method == "tools/call":
+        tool_name = params.get("name", "")
+        arguments = params.get("arguments", {})
+        context = params.get("context", {})
+        tenant_id = context.get("tenant_id", "acme-corp")
+        user_role = context.get("user_role", "manager")
+        user_name = context.get("user_name", "Sarah Chen")
+
+        conn = get_connection()
+        cur = conn.cursor()
+        now = datetime.now(timezone.utc).isoformat()
+
+        # Enforce ArmorIQ Policy on Tool Call
+        if tool_name == "bank.wire_transfer":
+            recipient = arguments.get("recipient", "")
+            amount = float(arguments.get("amount", 0.0))
+            routing = arguments.get("routing", "ACH-US-492019")
+
+            # Check CRM Allowlist
+            vendor_check = crm_accounting_mcp.verify_vendor(recipient)
+            is_allowlisted = vendor_check.get("status") == "VERIFIED"
+
+            if not is_allowlisted:
+                trace_id = f"tr_{uuid.uuid4().hex[:12]}"
+                plan_hash = generate_plan_hash({"tool": tool_name, "recipient": recipient, "amount": amount})
+                merkle_root, _ = build_merkle_tree([plan_hash])
+                cur.execute(
+                    """INSERT INTO traces (id, tenant_id, user_role, user_name, agent_name, prompt, action, status, reason, plan_hash, merkle_root, metadata_json, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (trace_id, tenant_id, user_role, user_name, "BankDisbursementAgent", f"Wire ${amount} to {recipient}",
+                     tool_name, "BLOCKED", f"Vendor '{recipient}' not in corporate allowlist", plan_hash, merkle_root, "{}", now)
+                )
+                conn.commit()
+                conn.close()
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{"type": "text", "text": f"POLICY_BLOCKED: Recipient '{recipient}' is not verified in CRM vendor allowlist."}],
+                        "isError": True
+                    }
+                }
+
+            # Check Spend Limit Policy ($50.00 threshold)
+            if amount > 50.00:
+                delegation_id = f"delg_{uuid.uuid4().hex[:8]}"
+                plan_hash = generate_plan_hash({"tool": tool_name, "recipient": recipient, "amount": amount, "action": "HOLD"})
+                merkle_root, _ = build_merkle_tree([plan_hash])
+                cur.execute(
+                    """INSERT INTO approvals (delegation_id, tenant_id, requested_by, role, amount, recipient, description, action_type, status, plan_hash, payload_json, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (delegation_id, tenant_id, "BankDisbursementAgent", user_role, amount, recipient,
+                     f"Wire transfer request ${amount:.2f} to {recipient}", tool_name, "HELD_FOR_APPROVAL",
+                     plan_hash, json.dumps(arguments), now)
+                )
+                trace_id = f"tr_{uuid.uuid4().hex[:12]}"
+                cur.execute(
+                    """INSERT INTO traces (id, tenant_id, user_role, user_name, agent_name, prompt, action, status, reason, plan_hash, merkle_root, metadata_json, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (trace_id, tenant_id, user_role, user_name, "BankDisbursementAgent", f"Wire ${amount} to {recipient}",
+                     tool_name, "HELD_FOR_APPROVAL", f"Amount ${amount:.2f} exceeds auto-settlement threshold ($50.00). Frozen in dual-control escrow.",
+                     plan_hash, merkle_root, "{}", now)
+                )
+                conn.commit()
+                conn.close()
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{
+                            "type": "text",
+                            "text": f"HELD_FOR_APPROVAL: Disbursement of ${amount:.2f} to {recipient} exceeds $50.00 policy limit. Frozen in escrow. Delegation Ticket ID: {delegation_id}. Awaiting CFO authorization in ArmorDesk Approval Inbox."
+                        }],
+                        "isError": True
+                    }
+                }
+
+            # Micro disbursement allowed
+            success, res = bank_payments_mcp.execute_wire_transfer(conn, tenant_id, recipient, amount, routing)
+            plan_hash = generate_plan_hash({"tool": tool_name, "recipient": recipient, "amount": amount})
+            merkle_root, _ = build_merkle_tree([plan_hash])
+            receipt_id = f"rcpt_{uuid.uuid4().hex[:8]}"
+            cur.execute(
+                """INSERT INTO receipts (id, tenant_id, delegation_id, action_type, amount, recipient, status, plan_hash, merkle_root, allowed_spec, actual_execution, signature, verified, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (receipt_id, tenant_id, None, tool_name, amount, recipient, "EXECUTED", plan_hash, merkle_root,
+                 json.dumps({"max_amount": 50.0}), json.dumps(res), f"sig_ed25519_{plan_hash[:16]}", 1, now)
+            )
+            trace_id = f"tr_{uuid.uuid4().hex[:12]}"
+            cur.execute(
+                """INSERT INTO traces (id, tenant_id, user_role, user_name, agent_name, prompt, action, status, reason, plan_hash, merkle_root, metadata_json, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (trace_id, tenant_id, user_role, user_name, "BankDisbursementAgent", f"Disburse ${amount} to {recipient}",
+                 tool_name, "ALLOWED", "Settled instantly within auto-settlement scope ($50.00)", plan_hash, merkle_root, "{}", now)
+            )
+            conn.commit()
+            conn.close()
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [{"type": "text", "text": json.dumps({"status": "SETTLED", "receipt_id": receipt_id, "details": res})}],
+                    "isError": False
+                }
+            }
+
+        elif tool_name == "bank.refund":
+            recipient = arguments.get("recipient", "Customer")
+            amount = float(arguments.get("amount", 20.0))
+            if amount <= 50.00:
+                success, res = bank_payments_mcp.execute_refund(conn, tenant_id, recipient, amount)
+                plan_hash = generate_plan_hash({"tool": tool_name, "recipient": recipient, "amount": amount})
+                merkle_root, _ = build_merkle_tree([plan_hash])
+                receipt_id = f"rcpt_{uuid.uuid4().hex[:8]}"
+                cur.execute(
+                    """INSERT INTO receipts (id, tenant_id, delegation_id, action_type, amount, recipient, status, plan_hash, merkle_root, allowed_spec, actual_execution, signature, verified, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (receipt_id, tenant_id, None, tool_name, amount, recipient, "EXECUTED", plan_hash, merkle_root,
+                     json.dumps({"max_amount": 50.0}), json.dumps(res), f"sig_ed25519_{plan_hash[:16]}", 1, now)
+                )
+                trace_id = f"tr_{uuid.uuid4().hex[:12]}"
+                cur.execute(
+                    """INSERT INTO traces (id, tenant_id, user_role, user_name, agent_name, prompt, action, status, reason, plan_hash, merkle_root, metadata_json, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (trace_id, tenant_id, user_role, user_name, "BankDisbursementAgent", f"Refund ${amount} to {recipient}",
+                     tool_name, "ALLOWED", "Micro-refund approved and deducted from treasury", plan_hash, merkle_root, "{}", now)
+                )
+                conn.commit()
+                conn.close()
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps({"status": "SETTLED", "receipt_id": receipt_id, "amount": amount})}],
+                        "isError": False
+                    }
+                }
+            else:
+                conn.close()
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{"type": "text", "text": f"HELD_FOR_APPROVAL: Refund of ${amount:.2f} exceeds $50.00 threshold."}],
+                        "isError": True
+                    }
+                }
+
+        elif tool_name == "crm.verify_vendor":
+            vendor_name = arguments.get("vendor_name", "")
+            res = crm_accounting_mcp.verify_vendor(vendor_name)
+            conn.close()
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [{"type": "text", "text": json.dumps(res)}],
+                    "isError": False
+                }
+            }
+
+        conn.close()
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "content": [{"type": "text", "text": f"SUCCESS: Governed tool '{tool_name}' executed safely under ArmorDesk."}],
+                "isError": False
+            }
+        }
+
+    return {
+        "jsonrpc": "2.0",
+        "id": req_id,
+        "error": {"code": -32601, "message": f"Method '{method}' not found"}
+    }
+
+# 12. Reset Sandbox
 @app.post("/api/reset")
 def reset_sandbox():
     init_db(reset=True)

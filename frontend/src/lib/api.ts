@@ -93,6 +93,39 @@ export interface ScenarioRunResponse {
   receipt_id?: string;
 }
 
+export interface MCPToolDef {
+  name: string;
+  description: string;
+  inputSchema: any;
+}
+
+export interface ConnectedAgentItem {
+  agent_id: string;
+  name: string;
+  transport: string;
+  status: string;
+  capabilities: string[];
+  assigned_sandbox: string;
+  enforced_policy: string;
+  last_heartbeat: string;
+}
+
+export interface MCPGatewayConfig {
+  gateway_url: string;
+  sse_url: string;
+  protocol_version: string;
+  tenant_id: string;
+  api_key_masked: string;
+  governed_tools: MCPToolDef[];
+  connected_agents: ConnectedAgentItem[];
+  sample_configs: {
+    claude_desktop: string;
+    cursor: string;
+    python_sdk: string;
+    curl: string;
+  };
+}
+
 export const api = {
   async getStatus() {
     const res = await fetch(`${API_BASE}/status`, { cache: "no-store" });
@@ -231,6 +264,43 @@ export const api = {
 
   async resetSandbox() {
     const res = await fetch(`${API_BASE}/reset`, { method: "POST" });
+    return res.json();
+  },
+
+  async getMCPConfig(tenantId: string = "acme-corp"): Promise<MCPGatewayConfig> {
+    const res = await fetch(`${API_BASE}/mcp/config?tenant_id=${tenantId}`, { cache: "no-store" });
+    return res.json();
+  },
+
+  async pingMCPGateway() {
+    const res = await fetch(`${API_BASE}/mcp/ping`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    return res.json();
+  },
+
+  async callMCPTool(
+    toolName: string,
+    argumentsObj: any,
+    userRole: string = "manager",
+    userName: string = "Sarah Chen",
+    tenantId: string = "acme-corp"
+  ) {
+    const res = await fetch(`${API_BASE}/mcp/gateway`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: Date.now(),
+        method: "tools/call",
+        params: {
+          name: toolName,
+          arguments: argumentsObj,
+          context: { tenant_id: tenantId, user_role: userRole, user_name: userName }
+        }
+      })
+    });
     return res.json();
   }
 };
