@@ -218,6 +218,13 @@ export default function LandingPage() {
             </button>
 
             <Link
+              href="/login"
+              className="hidden sm:inline-block px-3 py-2 text-xs font-semibold font-mono text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              Sign In
+            </Link>
+
+            <Link
               href="/overview"
               className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded bg-slate-900 text-white dark:bg-white dark:text-black hover:bg-slate-800 dark:hover:bg-zinc-200 transition-colors shadow-sm"
             >

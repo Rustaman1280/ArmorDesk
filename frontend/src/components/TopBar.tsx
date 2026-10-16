@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useApp, AVAILABLE_USERS, UserProfile } from "@/context/AppContext";
 import {
   Building2,
@@ -17,12 +17,14 @@ import {
   ChevronDown,
   Lock,
   Zap,
-  LogIn
+  LogIn,
+  LogOut
 } from "lucide-react";
 import { VoiceController } from "@/components/VoiceController";
 
 export function TopBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const {
     tenantId,
     setTenantId,
@@ -34,7 +36,8 @@ export function TopBar() {
     toggleTheme,
     setAuthModalOpen,
     loginAsDemoSeeded,
-    loginAsDemoClean
+    loginAsDemoClean,
+    logout
   } = useApp();
 
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
@@ -207,6 +210,30 @@ export function TopBar() {
                   </button>
                 );
               })}
+
+              {/* Account / Sign Out Menu Footer */}
+              <div className="pt-1.5 mt-1 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between px-1">
+                <button
+                  onClick={() => {
+                    setRoleDropdownOpen(false);
+                    router.push("/login");
+                  }}
+                  className="px-2 py-1 text-[11px] font-mono text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                >
+                  Switch Account...
+                </button>
+                <button
+                  onClick={() => {
+                    setRoleDropdownOpen(false);
+                    logout();
+                    router.push("/login");
+                  }}
+                  className="px-2 py-1 text-[11px] font-mono font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 flex items-center gap-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                >
+                  <LogOut className="h-3 w-3" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -223,6 +250,18 @@ export function TopBar() {
           ) : (
             <Moon className="h-4 w-4 text-slate-700" />
           )}
+        </button>
+
+        {/* Dedicated Sign Out Button */}
+        <button
+          onClick={() => {
+            logout();
+            router.push("/login");
+          }}
+          className="p-1.5 rounded-md border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#111114] hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 transition-colors shadow-sm"
+          title="Sign Out of Corporate Session"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
 
         {/* ArmorIQ Live Status Button */}

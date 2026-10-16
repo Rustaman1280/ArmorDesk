@@ -4,6 +4,7 @@ Entrypoint for Enterprise AI Agent Control Plane, Approval Inbox & Trust Center.
 """
 import json
 import uuid
+import hashlib
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
@@ -981,9 +982,73 @@ def auth_login(req: LoginRequest):
     conn = get_connection()
     cur = conn.cursor()
 
-    target_tenant = req.tenant_id or "acme-corp"
-    cur.execute("SELECT id, name, spend_limit, policy_rules FROM tenants WHERE id = ?", (target_tenant,))
-    tenant_row = cur.fetchone()
+    email_clean = req.email.strip().lower()
+    cur.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email_clean,))
+    user_row = cur.fetchone()
+
+    now = datetime.now(timezone.utc).isoformat()
+    req_pw_hash = hashlib.sha256(req.password.encode()).hexdigest()
+
+    if user_row:
+        # User found in DB
+        tenant_id = user_row["tenant_id"]
+        cur.execute("SELECT id, name, spend_limit, policy_rules FROM tenants WHERE id = ?", (tenant_id,))
+        tenant_row = cur.fetchone()
+        user = {
+            "id": user_row["id"],
+            "name": user_row["name"],
+            "email": user_row["email"],
+            "role": user_row["role"],
+            "title": user_row["title"] or "Corporate Officer",
+            "avatar": user_row["avatar"] or "CO",
+            "tenant_id": tenant_id,
+            "scopeSummary": "Full Treasury & Wire Transfer Approval Authority" if user_row["role"] == "manager" else "Restricted View-Only Scope · Financial Actions Blocked"
+        }
+    else:
+        # Fallback or Demo Account detection
+        if "marcus" in email_clean or "globex" in email_clean or req.tenant_id == "globex-inc":
+            tenant_id = "globex-inc"
+            name = "Marcus Vance"
+            role = "manager"
+            title = "VP Treasury & Risk"
+            avatar = "MV"
+            scope = "Clean Slate Treasury · Full Policy Signing Authority"
+        elif "intern" in email_clean or "alex" in email_clean:
+            tenant_id = "acme-corp"
+            name = "Alex Rivera"
+            role = "intern"
+            title = "Junior FinOps Intern"
+            avatar = "AR"
+            scope = "Restricted View-Only Scope · Financial Actions Blocked"
+        else:
+            tenant_id = req.tenant_id or "acme-corp"
+            name = "Sarah Chen"
+            role = "manager"
+            title = "CFO · FinOps Lead"
+            avatar = "SC"
+            scope = "Full Treasury & Wire Transfer Approval Authority"
+
+        # Persist this user into users table so it exists for next login
+        usr_id = f"usr_{uuid.uuid4().hex[:8]}"
+        cur.execute(
+            "INSERT OR REPLACE INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (usr_id, email_clean, req_pw_hash, name, tenant_id, role, title, avatar, now)
+        )
+        conn.commit()
+
+        cur.execute("SELECT id, name, spend_limit, policy_rules FROM tenants WHERE id = ?", (tenant_id,))
+        tenant_row = cur.fetchone()
+        user = {
+            "id": usr_id,
+            "name": name,
+            "email": email_clean,
+            "role": role,
+            "title": title,
+            "avatar": avatar,
+            "tenant_id": tenant_id,
+            "scopeSummary": scope
+        }
+
     if not tenant_row:
         cur.execute("SELECT id, name, spend_limit, policy_rules FROM tenants LIMIT 1")
         tenant_row = cur.fetchone()
@@ -991,35 +1056,6 @@ def auth_login(req: LoginRequest):
     cur.execute("SELECT balance, currency FROM bank_accounts WHERE tenant_id = ?", (tenant_row["id"],))
     b_row = cur.fetchone()
     conn.close()
-
-    # Determine user identity based on email or default
-    if "intern" in req.email.lower() or "alex" in req.email.lower():
-        user = {
-            "name": "Alex Rivera",
-            "email": req.email,
-            "role": "intern",
-            "title": "Junior FinOps Intern",
-            "avatar": "AR",
-            "scopeSummary": "Restricted View-Only Scope · Financial Actions Blocked"
-        }
-    elif "marcus" in req.email.lower() or target_tenant == "globex-inc":
-        user = {
-            "name": "Marcus Vance",
-            "email": req.email or "marcus.vance@globex.io",
-            "role": "manager",
-            "title": "VP Treasury & Risk",
-            "avatar": "MV",
-            "scopeSummary": "Clean Slate Treasury · Full Policy Signing Authority"
-        }
-    else:
-        user = {
-            "name": "Sarah Chen",
-            "email": req.email or "sarah.chen@acme.com",
-            "role": "manager",
-            "title": "CFO · FinOps Lead",
-            "avatar": "SC",
-            "scopeSummary": "Full Treasury & Wire Transfer Approval Authority"
-        }
 
     return {
         "status": "AUTHENTICATED",
@@ -1058,15 +1094,28 @@ def auth_register(req: RegisterRequest):
         "INSERT OR REPLACE INTO bank_accounts VALUES (?, ?, ?, ?)",
         (tenant_id, float(req.initial_deposit), "USD", now)
     )
+
+    usr_id = f"usr_{uuid.uuid4().hex[:8]}"
+    pw_hash = hashlib.sha256(req.password.encode()).hexdigest()
+    avatar = "".join([part[0].upper() for part in req.name.split()[:2]]) or "US"
+    title = "Founder & Chief Executive"
+
+    cur.execute(
+        "INSERT OR REPLACE INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (usr_id, req.email.strip().lower(), pw_hash, req.name, tenant_id, "manager", title, avatar, now)
+    )
+
     conn.commit()
     conn.close()
 
     user = {
+        "id": usr_id,
         "name": req.name,
         "email": req.email,
         "role": "manager",
-        "title": "Chief Executive Officer",
-        "avatar": "".join([part[0].upper() for part in req.name.split()[:2]]) or "US",
+        "title": title,
+        "avatar": avatar,
+        "tenant_id": tenant_id,
         "scopeSummary": "Administrator · Full Policy Signing Authority"
     }
 
@@ -1080,6 +1129,52 @@ def auth_register(req: RegisterRequest):
             "spend_limit": 1000.0,
             "balance": float(req.initial_deposit),
             "currency": "USD"
+        }
+    }
+
+@app.get("/api/auth/me")
+def auth_me(email: Optional[str] = None, tenant_id: Optional[str] = None):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    user_row = None
+    if email:
+        cur.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email.strip().lower(),))
+        user_row = cur.fetchone()
+    if not user_row and tenant_id:
+        cur.execute("SELECT * FROM users WHERE tenant_id = ? LIMIT 1", (tenant_id,))
+        user_row = cur.fetchone()
+    if not user_row:
+        cur.execute("SELECT * FROM users WHERE email = 'sarah.chen@acme.com'")
+        user_row = cur.fetchone()
+
+    if not user_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+
+    cur.execute("SELECT * FROM tenants WHERE id = ?", (user_row["tenant_id"],))
+    tenant_row = cur.fetchone()
+    cur.execute("SELECT * FROM bank_accounts WHERE tenant_id = ?", (user_row["tenant_id"],))
+    b_row = cur.fetchone()
+    conn.close()
+
+    return {
+        "user": {
+            "id": user_row["id"],
+            "name": user_row["name"],
+            "email": user_row["email"],
+            "role": user_row["role"],
+            "title": user_row["title"],
+            "avatar": user_row["avatar"],
+            "tenant_id": user_row["tenant_id"],
+            "scopeSummary": "Full Treasury & Wire Transfer Approval Authority" if user_row["role"] == "manager" else "Restricted View-Only Scope · Financial Actions Blocked"
+        },
+        "tenant": {
+            "id": tenant_row["id"] if tenant_row else "acme-corp",
+            "name": tenant_row["name"] if tenant_row else "Acme Corp",
+            "spend_limit": float(tenant_row["spend_limit"]) if tenant_row else 1000.0,
+            "balance": float(b_row["balance"]) if b_row else 0.0,
+            "currency": b_row["currency"] if b_row else "USD"
         }
     }
 

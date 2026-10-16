@@ -417,8 +417,34 @@ export default function DashboardPage() {
 
               {filteredTraces.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-zinc-500 text-xs font-mono">
-                    No matching tool invocations in live event buffer.
+                  <td colSpan={6} className="py-16 text-center text-xs">
+                    <div className="max-w-md mx-auto space-y-2">
+                      <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+                        <Sparkles className="h-4.5 w-4.5" />
+                      </div>
+                      <div className="font-bold text-sm text-slate-800 dark:text-zinc-200">
+                        Pristine Clean Slate Buffer ({currentTenant?.name || "Workspace"})
+                      </div>
+                      <p className="text-slate-500 dark:text-zinc-400 text-xs font-sans">
+                        Zero prior telemetry recorded. Connect external agents via the MCP gateway or dispatch a test transaction from the Gauntlet.
+                      </p>
+                      <div className="pt-2 flex items-center justify-center gap-3">
+                        <Link
+                          href="/connect"
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold font-mono text-[11px] inline-flex items-center gap-1 shadow-xs"
+                        >
+                          <Plug className="h-3 w-3" />
+                          <span>Connect MCP Agent</span>
+                        </Link>
+                        <Link
+                          href="/gauntlet"
+                          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-[#16171d] hover:bg-slate-100 text-slate-700 dark:text-zinc-300 font-semibold font-mono text-[11px] inline-flex items-center gap-1 shadow-xs"
+                        >
+                          <Play className="h-3 w-3" />
+                          <span>Run Gauntlet Test</span>
+                        </Link>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               )}

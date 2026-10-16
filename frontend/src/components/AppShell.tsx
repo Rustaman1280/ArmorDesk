@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { usePathname } from "next/navigation";
+import React, { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { ProSettingsModal } from "@/components/ProSettingsModal";
@@ -11,10 +11,18 @@ import { useApp } from "@/context/AppContext";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { authModalOpen, setAuthModalOpen } = useApp();
-  const isLandingPage = pathname === "/";
+  const router = useRouter();
+  const { authModalOpen, setAuthModalOpen, isAuthenticated } = useApp();
 
-  if (isLandingPage) {
+  const isPublicPage = pathname === "/" || pathname === "/login" || pathname === "/register";
+
+  useEffect(() => {
+    if (!isAuthenticated && !isPublicPage) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, isPublicPage, router]);
+
+  if (isPublicPage) {
     return (
       <div className="min-h-screen w-full flex flex-col bg-[#F8FAFC] dark:bg-[#08090B] text-slate-900 dark:text-zinc-100 antialiased selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:text-emerald-300 transition-colors duration-200">
         {children}

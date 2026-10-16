@@ -5,6 +5,7 @@ Persistent state for tenants, bank accounts, traces, approvals, receipts, CTF su
 import sqlite3
 import json
 import os
+import hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -65,6 +66,7 @@ def init_db(reset: bool = False):
             DROP TABLE IF EXISTS receipts;
             DROP TABLE IF EXISTS approvals;
             DROP TABLE IF EXISTS traces;
+            DROP TABLE IF EXISTS users;
             DROP TABLE IF EXISTS bank_accounts;
             DROP TABLE IF EXISTS tenants;
         """)
@@ -76,6 +78,19 @@ def init_db(reset: bool = False):
             spend_limit REAL DEFAULT 1000.0,
             policy_rules TEXT NOT NULL,
             created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT NOT NULL,
+            tenant_id TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'manager',
+            title TEXT,
+            avatar TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(tenant_id) REFERENCES tenants(id)
         );
 
         CREATE TABLE IF NOT EXISTS bank_accounts (
@@ -180,6 +195,24 @@ def seed_data(conn: sqlite3.Connection):
         }), now)
     ]
     cur.executemany("INSERT INTO tenants VALUES (?, ?, ?, ?, ?)", tenants)
+
+    # Seed Default Users (Password: demo123)
+    default_pw_hash = hashlib.sha256("demo123".encode()).hexdigest()
+    users = [
+        (
+            "usr_sarah", "sarah.chen@acme.com", default_pw_hash, "Sarah Chen",
+            "acme-corp", "manager", "CFO · FinOps Lead", "SC", now
+        ),
+        (
+            "usr_marcus", "marcus.vance@globex.io", default_pw_hash, "Marcus Vance",
+            "globex-inc", "manager", "VP Treasury & Risk", "MV", now
+        ),
+        (
+            "usr_alex", "alex.rivera@acme.com", default_pw_hash, "Alex Rivera",
+            "acme-corp", "intern", "Junior FinOps Intern", "AR", now
+        )
+    ]
+    cur.executemany("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", users)
 
     # Bank Accounts ($250,000 for Acme, $180,000 for Globex)
     cur.execute("INSERT INTO bank_accounts VALUES (?, ?, ?, ?)", ("acme-corp", 250000.00, "USD", now))

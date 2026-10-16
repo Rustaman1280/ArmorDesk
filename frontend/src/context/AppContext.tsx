@@ -51,6 +51,10 @@ interface AppContextType {
   tenants: TenantInfo[];
   refreshTenants: () => Promise<void>;
   currentTenant?: TenantInfo;
+  isAuthenticated: boolean;
+  login: (email: string, password?: string, tenantId?: string) => Promise<boolean>;
+  register: (email: string, name: string, companyName: string, password?: string, initialDeposit?: number) => Promise<boolean>;
+  logout: () => void;
   proModalOpen: boolean;
   setProModalOpen: (open: boolean) => void;
   authModalOpen: boolean;
@@ -76,6 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [tenantId, setTenantId] = useState<string>("acme-corp");
   const [currentUser, setCurrentUser] = useState<UserProfile>(AVAILABLE_USERS[0]);
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [proModalOpen, setProModalOpen] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [proActive, setProActive] = useState<boolean>(false);
@@ -84,11 +89,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const authState = localStorage.getItem("armordesk_is_auth");
+    const savedUser = localStorage.getItem("armordesk_user");
+    const savedTenant = localStorage.getItem("armordesk_tenant");
+
+    if (authState === "false") {
+      setIsAuthenticated(false);
+    } else {
+      setIsAuthenticated(true);
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          setCurrentUser(parsed);
+        } catch {}
+      }
+      if (savedTenant) {
+        setTenantId(savedTenant);
+      }
+    }
+  }, []);
+
   const loginAsDemoSeeded = () => {
     setTenantId("acme-corp");
     setCurrentUser(AVAILABLE_USERS[0]);
+    setIsAuthenticated(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("armordesk_is_auth", "true");
+      localStorage.setItem("armordesk_user", JSON.stringify(AVAILABLE_USERS[0]));
+      localStorage.setItem("armordesk_tenant", "acme-corp");
+      localStorage.setItem("armordesk_token", "jwt_demo_seeded");
+    }
     addToast(
-      "Switched to Seeded Demo (Acme Corp)",
+      "Signed In: Seeded Demo (Acme Corp)",
       "Active approvals ($8k AWS bill), receipts, and multi-agent audit traces loaded.",
       "success"
     );
@@ -98,12 +132,88 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loginAsDemoClean = () => {
     setTenantId("globex-inc");
     setCurrentUser(AVAILABLE_USERS[2]);
+    setIsAuthenticated(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("armordesk_is_auth", "true");
+      localStorage.setItem("armordesk_user", JSON.stringify(AVAILABLE_USERS[2]));
+      localStorage.setItem("armordesk_tenant", "globex-inc");
+      localStorage.setItem("armordesk_token", "jwt_demo_clean");
+    }
     addToast(
-      "Switched to Clean Slate (Globex Inc)",
+      "Signed In: Clean Slate (Globex Inc)",
       "Pristine tenant loaded with 0 pending approvals and a clean audit buffer.",
       "info"
     );
     triggerReload();
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("armordesk_is_auth", "false");
+      localStorage.removeItem("armordesk_user");
+      localStorage.removeItem("armordesk_token");
+    }
+    addToast("Signed Out", "Session terminated. Please sign in to access corporate telemetry.", "info");
+  };
+
+  const login = async (email: string, password: string = "demo123", targetTenant?: string): Promise<boolean> => {
+    try {
+      const res = await api.login(email, password, targetTenant || tenantId);
+      if (res.user && res.tenant) {
+        setCurrentUser(res.user);
+        setTenantId(res.tenant.id);
+        setIsAuthenticated(true);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("armordesk_is_auth", "true");
+          localStorage.setItem("armordesk_user", JSON.stringify(res.user));
+          localStorage.setItem("armordesk_tenant", res.tenant.id);
+          if (res.token) localStorage.setItem("armordesk_token", res.token);
+        }
+        addToast("Authentication Successful", `Welcome back, ${res.user.name} (${res.tenant.name}).`, "success");
+        triggerReload();
+        return true;
+      }
+      return false;
+    } catch (e: any) {
+      addToast("Login Failed", e.message || "Invalid credentials", "error");
+      return false;
+    }
+  };
+
+  const register = async (
+    email: string,
+    name: string,
+    companyName: string,
+    password: string = "demo123",
+    initialDeposit: number = 100000.0
+  ): Promise<boolean> => {
+    try {
+      const res = await api.register(email, name, companyName, password, initialDeposit);
+      if (res.user && res.tenant) {
+        await refreshTenants();
+        setCurrentUser(res.user);
+        setTenantId(res.tenant.id);
+        setIsAuthenticated(true);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("armordesk_is_auth", "true");
+          localStorage.setItem("armordesk_user", JSON.stringify(res.user));
+          localStorage.setItem("armordesk_tenant", res.tenant.id);
+          if (res.token) localStorage.setItem("armordesk_token", res.token);
+        }
+        addToast(
+          "Workspace Registered",
+          `New tenant '${res.tenant.name}' initialized with $${initialDeposit.toLocaleString()} vault.`,
+          "success"
+        );
+        triggerReload();
+        return true;
+      }
+      return false;
+    } catch (e: any) {
+      addToast("Registration Failed", e.message || "Could not register workspace", "error");
+      return false;
+    }
   };
 
   useEffect(() => {
@@ -225,6 +335,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         tenants,
         refreshTenants,
         currentTenant,
+        isAuthenticated,
+        login,
+        register,
+        logout,
         proModalOpen,
         setProModalOpen,
         authModalOpen,

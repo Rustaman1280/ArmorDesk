@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import {
   Shield,
@@ -15,12 +15,15 @@ import {
   Server,
   Activity,
   Radio,
-  Plug
+  Plug,
+  LogOut,
+  Building
 } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { pendingApprovalsCount, mcpLatencies } = useApp();
+  const router = useRouter();
+  const { pendingApprovalsCount, mcpLatencies, currentUser, currentTenant, logout } = useApp();
 
   const navGroups = [
     {
@@ -155,9 +158,42 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Bottom MCP Telemetry Bar */}
-      <div className="p-3 border-t border-slate-200 dark:border-white/[0.07] bg-slate-50 dark:bg-[#0A0A0C]">
-        <div className="flex items-center justify-between mb-2">
+      {/* Bottom User & MCP Telemetry Bar */}
+      <div className="p-3 border-t border-slate-200 dark:border-white/[0.07] bg-slate-50 dark:bg-[#0A0A0C] space-y-2.5">
+        {/* User Session Profile Card */}
+        <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.05]">
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
+                currentUser.role === "manager"
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+                  : "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+              }`}
+            >
+              {currentUser.avatar}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate leading-tight">
+                {currentUser.name}
+              </div>
+              <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono truncate">
+                {currentTenant?.name.split(" ")[0] || "Acme"} · {currentUser.role === "manager" ? "CFO" : "Intern"}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              logout();
+              router.push("/login");
+            }}
+            className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400">
             <Radio className="h-3 w-3 text-emerald-600 dark:text-emerald-400 animate-pulse" />
             <span>MCP NODES</span>

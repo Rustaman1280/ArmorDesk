@@ -631,8 +631,23 @@ export default function ApprovalInboxPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-400 dark:text-zinc-500 text-xs font-mono">
-              Select a delegation ticket on the left to review details.
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-zinc-500 text-xs font-mono p-8 text-center space-y-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              <div className="font-bold text-sm text-slate-800 dark:text-zinc-200">
+                Escrow Queue Clear
+              </div>
+              <p className="text-slate-500 dark:text-zinc-400 text-xs max-w-sm font-sans">
+                Zero disbursements currently held for dual-control authorization. When autonomous agents exceed spend limits, they freeze here.
+              </p>
+              <button
+                onClick={() => handleTriggerQuickScenario(2)}
+                disabled={isSimulatingQuick !== null}
+                className="px-3.5 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-mono font-medium transition-colors disabled:opacity-50 shadow-xs"
+              >
+                + Dispatch $8,000 Test Invoice to Escrow
+              </button>
             </div>
           )}
         </div>
