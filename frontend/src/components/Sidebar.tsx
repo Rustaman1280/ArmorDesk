@@ -184,7 +184,7 @@ export function Sidebar() {
           <button
             onClick={() => {
               logout();
-              router.push("/login");
+              window.location.href = "/login";
             }}
             className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
             title="Sign Out"

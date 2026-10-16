@@ -26,14 +26,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState("demo123");
   const [isLoading, setIsLoading] = useState(false);
 
+  const getDestination = () => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const redir = sp.get("redirect");
+      if (redir && redir.startsWith("/")) return redir;
+    }
+    return "/overview";
+  };
+
   const handleLaunchSeeded = () => {
     loginAsDemoSeeded();
-    router.push("/overview");
+    window.location.href = getDestination();
   };
 
   const handleLaunchClean = () => {
     loginAsDemoClean();
-    router.push("/overview");
+    window.location.href = getDestination();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +52,7 @@ export default function LoginPage() {
     try {
       const ok = await login(email, password);
       if (ok) {
-        router.push("/overview");
+        window.location.href = getDestination();
       }
     } finally {
       setIsLoading(false);

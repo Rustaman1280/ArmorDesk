@@ -2,6 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { api, TenantInfo, ApprovalItem } from "@/lib/api";
+import {
+  setAuthCookies,
+  clearAuthCookies,
+  getCookieValue,
+  AUTH_COOKIE_NAME,
+  USER_COOKIE_NAME,
+  TENANT_COOKIE_NAME
+} from "@/lib/auth-cookie";
 
 export interface UserProfile {
   name: string;
@@ -91,19 +99,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const authState = localStorage.getItem("armordesk_is_auth");
-    const savedUser = localStorage.getItem("armordesk_user");
-    const savedTenant = localStorage.getItem("armordesk_tenant");
+    const cookieToken = getCookieValue(AUTH_COOKIE_NAME);
+    const localToken = localStorage.getItem("armordesk_token");
+    const token = cookieToken || localToken;
+    const authFlag = localStorage.getItem("armordesk_is_auth");
 
-    if (authState === "false") {
+    if (!token || authFlag === "false") {
       setIsAuthenticated(false);
+      clearAuthCookies();
     } else {
       setIsAuthenticated(true);
-      if (savedUser) {
+      const savedUserStr = getCookieValue(USER_COOKIE_NAME) || localStorage.getItem("armordesk_user");
+      const savedTenant = getCookieValue(TENANT_COOKIE_NAME) || localStorage.getItem("armordesk_tenant") || "acme-corp";
+
+      if (savedUserStr) {
         try {
-          const parsed = JSON.parse(savedUser);
+          const parsed = JSON.parse(savedUserStr);
           setCurrentUser(parsed);
-        } catch {}
+          setAuthCookies(token, parsed, savedTenant);
+        } catch {
+          setAuthCookies(token, AVAILABLE_USERS[0], savedTenant);
+        }
+      } else {
+        setAuthCookies(token, AVAILABLE_USERS[0], savedTenant);
       }
       if (savedTenant) {
         setTenantId(savedTenant);
@@ -115,12 +133,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTenantId("acme-corp");
     setCurrentUser(AVAILABLE_USERS[0]);
     setIsAuthenticated(true);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("armordesk_is_auth", "true");
-      localStorage.setItem("armordesk_user", JSON.stringify(AVAILABLE_USERS[0]));
-      localStorage.setItem("armordesk_tenant", "acme-corp");
-      localStorage.setItem("armordesk_token", "jwt_demo_seeded");
-    }
+    setAuthCookies("jwt_demo_seeded", AVAILABLE_USERS[0], "acme-corp");
     addToast(
       "Signed In: Seeded Demo (Acme Corp)",
       "Active approvals ($8k AWS bill), receipts, and multi-agent audit traces loaded.",
@@ -133,12 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTenantId("globex-inc");
     setCurrentUser(AVAILABLE_USERS[2]);
     setIsAuthenticated(true);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("armordesk_is_auth", "true");
-      localStorage.setItem("armordesk_user", JSON.stringify(AVAILABLE_USERS[2]));
-      localStorage.setItem("armordesk_tenant", "globex-inc");
-      localStorage.setItem("armordesk_token", "jwt_demo_clean");
-    }
+    setAuthCookies("jwt_demo_clean", AVAILABLE_USERS[2], "globex-inc");
     addToast(
       "Signed In: Clean Slate (Globex Inc)",
       "Pristine tenant loaded with 0 pending approvals and a clean audit buffer.",
@@ -149,11 +157,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setIsAuthenticated(false);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("armordesk_is_auth", "false");
-      localStorage.removeItem("armordesk_user");
-      localStorage.removeItem("armordesk_token");
-    }
+    clearAuthCookies();
     addToast("Signed Out", "Session terminated. Please sign in to access corporate telemetry.", "info");
   };
 
@@ -161,15 +165,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.login(email, password, targetTenant || tenantId);
       if (res.user && res.tenant) {
+        const token = res.token || `jwt_${Date.now()}`;
         setCurrentUser(res.user);
         setTenantId(res.tenant.id);
         setIsAuthenticated(true);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("armordesk_is_auth", "true");
-          localStorage.setItem("armordesk_user", JSON.stringify(res.user));
-          localStorage.setItem("armordesk_tenant", res.tenant.id);
-          if (res.token) localStorage.setItem("armordesk_token", res.token);
-        }
+        setAuthCookies(token, res.user, res.tenant.id);
         addToast("Authentication Successful", `Welcome back, ${res.user.name} (${res.tenant.name}).`, "success");
         triggerReload();
         return true;
@@ -192,15 +192,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const res = await api.register(email, name, companyName, password, initialDeposit);
       if (res.user && res.tenant) {
         await refreshTenants();
+        const token = res.token || `jwt_${Date.now()}`;
         setCurrentUser(res.user);
         setTenantId(res.tenant.id);
         setIsAuthenticated(true);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("armordesk_is_auth", "true");
-          localStorage.setItem("armordesk_user", JSON.stringify(res.user));
-          localStorage.setItem("armordesk_tenant", res.tenant.id);
-          if (res.token) localStorage.setItem("armordesk_token", res.token);
-        }
+        setAuthCookies(token, res.user, res.tenant.id);
         addToast(
           "Workspace Registered",
           `New tenant '${res.tenant.name}' initialized with $${initialDeposit.toLocaleString()} vault.`,

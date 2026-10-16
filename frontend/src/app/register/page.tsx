@@ -43,7 +43,7 @@ export default function RegisterPage() {
         parseFloat(initialDeposit) || 100000.0
       );
       if (ok) {
-        router.push("/overview");
+        window.location.href = "/overview";
       }
     } finally {
       setIsLoading(false);
@@ -204,7 +204,7 @@ export default function RegisterPage() {
             <button
               onClick={() => {
                 loginAsDemoSeeded();
-                router.push("/overview");
+                window.location.href = "/overview";
               }}
               className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20"
             >
@@ -213,7 +213,7 @@ export default function RegisterPage() {
             <button
               onClick={() => {
                 loginAsDemoClean();
-                router.push("/overview");
+                window.location.href = "/overview";
               }}
               className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 font-bold border border-blue-500/20"
             >
