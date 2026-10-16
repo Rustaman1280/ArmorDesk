@@ -1,8 +1,14 @@
+# Environment variables & secrets
+.env
+.env.*
+*.env
+
 # Python
 backend/.venv/
 backend/__pycache__/
 backend/*.pyc
 backend/*.db
+backend/*.sqlite3
 __pycache__/
 *.pyc
 
