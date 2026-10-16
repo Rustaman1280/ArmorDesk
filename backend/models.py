@@ -150,3 +150,4 @@ class ConfigResponse(BaseModel):
     armoriq_pro_api_key_masked: str
     slack_webhook_configured: bool
     mode: str
+    sdk_version: Optional[str] = "0.6.10"

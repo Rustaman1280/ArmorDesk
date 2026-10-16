@@ -97,6 +97,9 @@ class FinOpsCrewOrchestrator:
         steps.append({"step": 2, "agent": "VerifierAgent", "tool": "mcp.crm.verify_vendor", "status": "ALLOWED", "detail": f"Customer verified on registered account ({email_data['order_id']})"})
 
         # Plan creation & hash
+        user_email = f"{user_name.lower().replace(' ', '.')}@{tenant_id.replace('-', '')}.com"
+        self.armoriq_client.for_user(user_email)
+
         plan_spec = {
             "tenant_id": tenant_id,
             "action": "mcp.bank.refund",
@@ -105,6 +108,7 @@ class FinOpsCrewOrchestrator:
             "max_spend_limit": tenant["policy_rules"].get("auto_refund_limit", 100.0),
             "allowed_tools": ["mcp.bank.refund"]
         }
+        self.armoriq_client.capture_plan(llm="claude-3-5-sonnet", prompt="Process customer micro refund", plan=plan_spec)
         plan_hash = generate_plan_hash(plan_spec)
         merkle_root, _ = build_merkle_tree([
             f"step1:ReaderAgent:read:{email_data['id']}",
@@ -387,6 +391,10 @@ class FinOpsCrewOrchestrator:
     async def run_scenario_5_role_policy(self, tenant_id: str = "acme-corp", user_role: str = "intern", user_name: str = "Alex Rivera") -> Dict[str, Any]:
         """Scenario 5: Role Policy Comparison (Intern vs Manager)."""
         steps = []
+        user_email = f"{user_name.lower().replace(' ', '.')}@{tenant_id.replace('-', '')}.com"
+        # Bind user scope via ArmorIQ SDK
+        user_scope = self.armoriq_client.for_user(user_email)
+
         allowed, reason = for_user(user_role, "wire_transfer", amount=5000.0)
 
         status = "ALLOWED" if allowed else "BLOCKED"
@@ -395,7 +403,7 @@ class FinOpsCrewOrchestrator:
             "agent": "IdentityGate",
             "tool": "armoriq.for_user",
             "status": status,
-            "detail": reason
+            "detail": f"[{user_email}] {reason}"
         })
 
         plan_spec = {"user_role": user_role, "user_name": user_name, "requested_action": "wire_transfer", "amount": 5000.0}

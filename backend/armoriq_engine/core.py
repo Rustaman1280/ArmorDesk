@@ -28,8 +28,18 @@ SUB_AGENT_SCOPES = {
     }
 }
 
+try:
+    from armoriq_sdk.crypto_verify import canonical_json as sdk_canonical_json
+except ImportError:
+    sdk_canonical_json = None
+
 def canonical_json(data: Any) -> str:
-    """Deterministic JSON serialization for cryptographic hashing."""
+    """Deterministic JSON serialization for cryptographic hashing (RFC 8785)."""
+    if sdk_canonical_json:
+        try:
+            return sdk_canonical_json(data).decode('utf-8')
+        except Exception:
+            pass
     return json.dumps(data, sort_keys=True, separators=(',', ':'))
 
 def hash_sha256(data: str) -> str:

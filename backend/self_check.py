@@ -21,6 +21,15 @@ async def run_checks():
     assert float(cur.fetchone()["balance"]) == 250000.0, "Acme initial balance mismatch"
 
     print("[2/6] Verifying Cryptographic Plan Hash & Merkle Tree...")
+    import armoriq_sdk
+    print(f"       -> Loaded official armoriq-sdk v{armoriq_sdk.__version__}")
+    from armoriq_sdk.plan_builder import ToolCall, build_plan_from_tool_calls, hash_tool_calls
+    tc = ToolCall(name="bank__refund", args={"amount": 20.0, "recipient": "Acme Customer"})
+    plan = build_plan_from_tool_calls([tc], goal="Process micro refund")
+    sdk_h = hash_tool_calls([tc])
+    assert len(sdk_h) == 64, "Official SDK tool calls hash must be 64 hex chars"
+    assert "steps" in plan, "Official SDK plan must contain steps"
+
     plan_data = {"tenant_id": "acme-corp", "allowed_tools": ["mcp.bank.refund"], "amount": 20.0}
     plan_hash_1 = generate_plan_hash(plan_data)
     plan_hash_2 = generate_plan_hash(plan_data)

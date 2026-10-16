@@ -497,11 +497,18 @@ def get_config():
     is_active = bool(pro_key and len(pro_key.strip()) > 8)
     masked = f"{pro_key[:4]}...{pro_key[-4:]}" if is_active else "NOT_CONFIGURED (SANDBOX_SIMULATION_ACTIVE)"
 
+    try:
+        import armoriq_sdk
+        sdk_v = getattr(armoriq_sdk, "__version__", "0.6.10")
+    except ImportError:
+        sdk_v = "not_installed"
+
     return ConfigResponse(
         armoriq_pro_active=is_active,
         armoriq_pro_api_key_masked=masked,
         slack_webhook_configured=bool(slack_url and slack_url.startswith("http")),
-        mode="PRO_LIVE" if is_active else "PRO_SIMULATION_SANDBOX"
+        mode="PRO_LIVE" if is_active else "PRO_SIMULATION_SANDBOX",
+        sdk_version=sdk_v
     )
 
 @app.post("/api/config")

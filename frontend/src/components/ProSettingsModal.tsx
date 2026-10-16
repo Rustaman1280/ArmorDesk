@@ -95,6 +95,11 @@ export function ProSettingsModal() {
             <div className="font-mono text-xs font-semibold text-emerald-400 mt-0.5">
               {currentConfig?.mode || "PRO_SIMULATION_SANDBOX"}
             </div>
+            {currentConfig?.sdk_version && (
+              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                Official SDK: <span className="text-emerald-400 font-medium">v{currentConfig.sdk_version}</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1.5 text-zinc-300 font-mono text-[11px] px-2 py-1 rounded bg-[#18181C] border border-white/[0.06]">
             <Lock className="h-3 w-3 text-emerald-400" />
