@@ -1,14 +1,11 @@
 import "./globals.css";
 import React from "react";
 import { AppProvider } from "@/context/AppContext";
-import { Sidebar } from "@/components/Sidebar";
-import { TopBar } from "@/components/TopBar";
-import { ProSettingsModal } from "@/components/ProSettingsModal";
-import { ToastContainer } from "@/components/ToastContainer";
+import { AppShell } from "@/components/AppShell";
 
 export const metadata = {
   title: "ArmorDesk — Enterprise AI Agent Control Plane & Trust Center",
-  description: "B2B SaaS Multi-Agent Governance, Approval Inbox, Verifiable Receipts & Gauntlet CTF",
+  description: "Cryptographic Intent Governance, Human-in-the-Loop Approval Inbox, and Break-the-Agent Gauntlet for Autonomous AI Agents.",
 };
 
 export default function RootLayout({
@@ -17,25 +14,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#09090B] text-zinc-100 antialiased min-h-screen flex selection:bg-zinc-800 selection:text-white">
+    <html lang="en" className="scroll-smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="bg-[#F8FAFC] text-slate-900 dark:bg-[#08090B] dark:text-zinc-100 antialiased min-h-screen">
         <AppProvider>
-          {/* Left Command Center Sidebar (Width 240px) */}
-          <Sidebar />
-
-          {/* Right Main Application Area */}
-          <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-            {/* Top Telemetry & Context Bar (56px) */}
-            <TopBar />
-
-            {/* Dynamic Page Content */}
-            <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
-              {children}
-            </main>
-          </div>
-
-          <ProSettingsModal />
-          <ToastContainer />
+          <AppShell>{children}</AppShell>
         </AppProvider>
       </body>
     </html>

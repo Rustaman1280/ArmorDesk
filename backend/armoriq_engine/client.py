@@ -54,13 +54,15 @@ class ArmorIQClient:
         key = api_key or os.getenv("ARMORIQ_API_KEY") or os.getenv("ARMORIQ_PRO_API_KEY")
         if not key:
             try:
-                from database import get_connection
+                from database import get_connection, resolve_default_armoriq_key
                 conn = get_connection()
                 cur = conn.cursor()
                 cur.execute("SELECT value FROM config WHERE key = 'ARMORIQ_PRO_API_KEY'")
                 row = cur.fetchone()
                 if row and row["value"]:
                     key = row["value"]
+                else:
+                    key = resolve_default_armoriq_key()
                 conn.close()
             except Exception:
                 pass

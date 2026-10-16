@@ -168,7 +168,12 @@ export const api = {
     return res.json();
   },
 
-  async runScenario(scenarioId: number, tenantId: string, userRole: string, userName: string): Promise<ScenarioRunResponse> {
+  async runScenario(
+    scenarioId: number,
+    tenantId: string = "acme-corp",
+    userRole: string = "manager",
+    userName: string = "Sarah Chen"
+  ): Promise<ScenarioRunResponse> {
     const res = await fetch(`${API_BASE}/scenarios/run`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

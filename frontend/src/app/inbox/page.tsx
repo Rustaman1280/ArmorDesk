@@ -5,34 +5,34 @@ import { useApp } from "@/context/AppContext";
 import { api, ApprovalItem } from "@/lib/api";
 import {
   Inbox,
+  ShieldCheck,
   CheckCircle,
   XCircle,
   Clock,
-  DollarSign,
-  AlertTriangle,
-  Building,
-  UserCheck,
   Send,
-  Zap,
+  Lock,
+  ArrowRight,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  Sparkles,
+  FileText,
+  DollarSign,
+  Building,
   Check,
   X,
-  FileCheck2,
-  Lock,
-  ChevronRight,
-  MessageSquare,
-  Code2,
-  Shield,
-  FileCode,
-  ArrowRight
+  RefreshCw,
+  Shield
 } from "lucide-react";
-import Link from "next/link";
 
 export default function ApprovalInboxPage() {
-  const { tenantId, currentUser, triggerReload, reloadTrigger, addToast } = useApp();
+  const { tenantId, currentUser, reloadTrigger, triggerReload, addToast } = useApp();
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [showRawPayload, setShowRawPayload] = useState<boolean>(false);
   const [isSimulatingQuick, setIsSimulatingQuick] = useState<number | null>(null);
 
   useEffect(() => {
@@ -44,8 +44,7 @@ export default function ApprovalInboxPage() {
       const data = await api.getApprovals(tenantId);
       setApprovals(data);
       if (data.length > 0 && !selectedId) {
-        // Default to first pending item or first item
-        const firstPending = data.find((a) => a.status === "HELD_FOR_APPROVAL") || data[0];
+        const firstPending = data.find((d) => d.status === "HELD_FOR_APPROVAL") || data[0];
         setSelectedId(firstPending.delegation_id);
       }
     } catch (e) {
@@ -56,8 +55,8 @@ export default function ApprovalInboxPage() {
   const handleAction = async (delegationId: string, action: "APPROVE" | "REJECT") => {
     if (action === "APPROVE" && currentUser.role === "intern") {
       addToast(
-        "Action Blocked by for_user Policy",
-        "Intern role (Alex Rivera) cannot authorize financial disbursements. Switch to Sarah Chen (CFO).",
+        "Action Denied by Policy (for_user)",
+        "Intern account (Alex Rivera) lacks treasury authorization. Switch to Sarah Chen (CFO) in the top-right header.",
         "error"
       );
       return;
@@ -70,17 +69,17 @@ export default function ApprovalInboxPage() {
         action,
         currentUser.role,
         currentUser.name,
-        `Processed via ArmorDesk Linear-Triage Inbox by ${currentUser.name}`
+        `Processed via ArmorDesk Inbox by ${currentUser.name}`
       );
       addToast(
         `Transaction ${action === "APPROVE" ? "Approved" : "Rejected"}`,
-        `Delegation ${delegationId} settled. Merkle leaf written to cryptographic ledger.`,
+        `Delegation ticket ${delegationId} finalized. Cryptographic receipt emitted to ledger.`,
         action === "APPROVE" ? "success" : "warning"
       );
       await loadApprovals();
       triggerReload();
     } catch (e: any) {
-      addToast("Settlement Failed", e.message, "error");
+      addToast("Failed to Process Ticket", e.message, "error");
     } finally {
       setProcessingId(null);
     }
@@ -93,7 +92,7 @@ export default function ApprovalInboxPage() {
       await loadApprovals();
       triggerReload();
       addToast(
-        "Simulation Dispatched",
+        "Scenario Dispatched",
         `${res.scenario_name}: Status ${res.overall_status}`,
         res.overall_status === "HELD_FOR_APPROVAL" ? "warning" : "info"
       );
@@ -113,310 +112,274 @@ export default function ApprovalInboxPage() {
   const pendingCount = approvals.filter((a) => a.status === "HELD_FOR_APPROVAL").length;
 
   return (
-    <div className="space-y-4">
-      {/* 1. Header & Instant Simulation Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-white/[0.07]">
+    <div className="space-y-6 pb-12">
+      {/* 1. Header & Context */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/[0.08]">
         <div>
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-              <Inbox className="h-3.5 w-3.5" />
-            </div>
-            <h1 className="text-base font-semibold text-white tracking-tight">
-              Human-in-the-Loop Approval Inbox
-            </h1>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25 font-semibold">
-              {pendingCount} HELD TRANSACTIONS
+            <span className="text-xs font-mono font-semibold tracking-wider text-amber-600 dark:text-amber-400 uppercase">
+              Human-in-the-Loop Dual Control
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 font-bold">
+              {pendingCount} PENDING SIGNATURE
             </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            Linear-style triage for actions gated by <code className="font-mono text-indigo-400">await_approval()</code>. Multi-channel Slack Block Kit sync and cryptographic non-repudiation release.
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+            Approval Inbox (Dual-Control Escrow)
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+            When autonomous agents request capital movements exceeding policy limits ($50.00), execution freezes here until authorized by an executive.
           </p>
         </div>
 
-        {/* Quick Simulation Trigger Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-mono text-zinc-500">Instant Triggers:</span>
-          <button
-            onClick={() => handleTriggerQuickScenario(1)}
-            disabled={isSimulatingQuick !== null}
-            className="rounded-md border border-white/[0.08] bg-[#111114] hover:bg-[#18181C] px-2.5 py-1 text-xs font-mono text-zinc-300 transition-all shadow-hairline disabled:opacity-50"
-          >
-            + $20 Refund [Auto-Allow]
-          </button>
+        {/* Quick Simulation Triggers */}
+        <div className="flex items-center gap-2">
           <button
             onClick={() => handleTriggerQuickScenario(2)}
             disabled={isSimulatingQuick !== null}
-            className="rounded-md border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 text-xs font-mono text-amber-300 transition-all shadow-hairline disabled:opacity-50"
+            className="px-3.5 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-mono font-medium transition-colors disabled:opacity-50 shadow-sm"
           >
-            + $8,000 Invoice [Hold for CFO]
-          </button>
-          <button
-            onClick={() => handleTriggerQuickScenario(4)}
-            disabled={isSimulatingQuick !== null}
-            className="rounded-md border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 text-xs font-mono text-rose-300 transition-all shadow-hairline disabled:opacity-50"
-          >
-            + Unknown Refund [Auto-Block]
+            + Trigger $8,000 Test Invoice
           </button>
         </div>
       </div>
 
       {/* 2. Intern Policy Warning Banner if Intern is Active */}
       {currentUser.role === "intern" && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs flex items-start gap-3">
-          <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <div className="font-semibold text-amber-200">
-              Role Restricted: Signed in as {currentUser.name} (Junior Intern)
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-bold text-amber-900 dark:text-amber-200">
+              Notice: Active Session is {currentUser.name} (Junior FinOps Intern)
             </div>
-            <p className="text-zinc-400 mt-0.5 leading-relaxed">
-              The active <code className="font-mono text-amber-300">for_user(intern)</code> policy blocks approval permissions. The <strong>Approve & Settle</strong> button is disabled. Switch to <strong>Sarah Chen (CFO)</strong> in the top context bar to release holds.
+            <p className="text-slate-600 dark:text-zinc-400 leading-relaxed font-sans">
+              Under role policy enforcement (<code className="font-mono text-amber-700 dark:text-amber-300 font-bold">for_user</code>), intern roles <strong>do not possess treasury approval privileges</strong>. The "Approve & Disburse" action is locked. Switch role to <strong>Sarah Chen (CFO)</strong> in the top-right header to sign and execute this disbursement.
             </p>
           </div>
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 text-xs">
-        {["ALL", "HELD_FOR_APPROVAL", "APPROVED", "REJECTED"].map((st) => (
+      {/* 3. Filter Tabs */}
+      <div className="flex items-center gap-2 text-xs">
+        {[
+          { key: "ALL", label: `All Tickets (${approvals.length})` },
+          { key: "HELD_FOR_APPROVAL", label: `Pending Escrow (${pendingCount})` },
+          { key: "APPROVED", label: "Approved" },
+          { key: "REJECTED", label: "Rejected" },
+        ].map((tab) => (
           <button
-            key={st}
-            onClick={() => setFilterStatus(st)}
-            className={`px-3 py-1 rounded-md text-xs font-mono transition-all ${
-              filterStatus === st
-                ? "bg-[#1F1F24] text-white border border-white/[0.08] font-semibold shadow-hairline"
-                : "text-zinc-400 hover:text-zinc-200 hover:bg-[#151518]"
+            key={tab.key}
+            onClick={() => setFilterStatus(tab.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              filterStatus === tab.key
+                ? "bg-slate-900 text-white dark:bg-white dark:text-black font-semibold shadow-sm"
+                : "bg-slate-100 dark:bg-[#141519] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            {st === "HELD_FOR_APPROVAL" ? "PENDING HOLDS" : st}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* 3. Master-Detail Split Screen (Linear Triage / Stripe Disputes Style) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start min-h-[520px]">
-        {/* Left Column: Ticket Queue (Span 5) */}
-        <div className="lg:col-span-5 rounded-lg border border-white/[0.07] bg-[#111114] flex flex-col h-[560px] overflow-hidden shadow-hairline">
-          <div className="px-3.5 py-2.5 border-b border-white/[0.06] bg-[#0E0E11] flex items-center justify-between text-xs font-mono">
-            <span className="text-zinc-400">TRANSACTION QUEUE</span>
-            <span className="text-zinc-500">{filtered.length} tickets</span>
+      {/* 4. Master-Detail Clean Split Screen */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Transaction List (Span 5) */}
+        <div className="lg:col-span-5 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0E0F12] overflow-hidden shadow-sm flex flex-col h-[520px]">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] flex items-center justify-between text-xs font-mono">
+            <span className="text-slate-500 dark:text-zinc-400 font-semibold">ESCROW QUEUE</span>
+            <span className="text-slate-400 dark:text-zinc-500">{filtered.length} tickets</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-white/[0.04]">
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-white/[0.04]">
             {filtered.map((item) => {
               const isSelected = selectedItem?.delegation_id === item.delegation_id;
-              const isPending = item.status === "HELD_FOR_APPROVAL";
 
               return (
                 <div
                   key={item.delegation_id}
                   onClick={() => setSelectedId(item.delegation_id)}
-                  className={`p-3.5 cursor-pointer transition-all ${
+                  className={`p-4 cursor-pointer transition-all ${
                     isSelected
-                      ? "bg-[#18181C] border-l-2 border-l-amber-400"
-                      : "hover:bg-[#141418] opacity-90"
+                      ? "bg-slate-100 dark:bg-[#181920] border-l-4 border-l-emerald-600 dark:border-l-emerald-400"
+                      : "hover:bg-slate-50 dark:hover:bg-[#121317]"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-semibold text-zinc-300">
-                      {item.delegation_id}
+                    <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                      {item.recipient}
                     </span>
-                    <span className="font-mono text-sm font-semibold text-zinc-100 tabular-nums">
+                    <span className="font-mono text-sm font-bold text-slate-900 dark:text-white tabular-nums">
                       ${item.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
 
-                  <div className="mt-1 text-xs text-zinc-300 font-medium truncate">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400 line-clamp-1 font-sans">
                     {item.description}
-                  </div>
+                  </p>
 
-                  <div className="mt-2 flex items-center justify-between text-[11px] font-mono text-zinc-500">
+                  <div className="mt-3 flex items-center justify-between text-[11px] font-mono">
                     <span
-                      className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                         item.status === "HELD_FOR_APPROVAL"
-                          ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                          ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25"
                           : item.status === "APPROVED"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
-                          : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25"
+                          : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30"
                       }`}
                     >
-                      {item.status}
+                      {item.status === "HELD_FOR_APPROVAL" ? "⏳ AWAITING CFO" : item.status}
                     </span>
-                    <span>{item.recipient}</span>
+                    <span className="text-slate-400 dark:text-zinc-500 text-[10px]">
+                      {item.created_at ? new Date(item.created_at).toLocaleTimeString() : "Just now"}
+                    </span>
                   </div>
                 </div>
               );
             })}
 
             {filtered.length === 0 && (
-              <div className="p-12 text-center text-zinc-500 font-mono text-xs">
-                No transactions found matching "{filterStatus}".
+              <div className="p-12 text-center text-slate-400 dark:text-zinc-500 font-mono text-xs">
+                No delegation tickets found in this view.
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Column: Inspector & Action Panel (Span 7) */}
-        <div className="lg:col-span-7 rounded-lg border border-white/[0.07] bg-[#111114] flex flex-col h-[560px] overflow-hidden shadow-hairline">
+        {/* Right Column: Detailed Inspector & Action Panel (Span 7) */}
+        <div className="lg:col-span-7 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0E0F12] shadow-sm flex flex-col h-[520px] overflow-hidden">
           {selectedItem ? (
             <div className="flex flex-col h-full justify-between">
               {/* Header Details */}
-              <div className="p-4 border-b border-white/[0.06] bg-[#0E0E11]">
+              <div className="p-5 border-b border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-semibold text-indigo-400">
-                      {selectedItem.delegation_id}
-                    </span>
-                    <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
-                        selectedItem.status === "HELD_FOR_APPROVAL"
-                          ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
-                          : selectedItem.status === "APPROVED"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
-                          : "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                      }`}
-                    >
-                      {selectedItem.status}
-                    </span>
-                  </div>
+                  <span className="text-xs font-mono font-bold text-slate-500 dark:text-zinc-400">
+                    TICKET ID: {selectedItem.delegation_id}
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                      selectedItem.status === "HELD_FOR_APPROVAL"
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25"
+                        : selectedItem.status === "APPROVED"
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25"
+                        : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30"
+                    }`}
+                  >
+                    {selectedItem.status === "HELD_FOR_APPROVAL" ? "AWAITING CFO SIGNATURE" : selectedItem.status}
+                  </span>
+                </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase block">Amount</span>
-                    <span className="text-xl font-bold font-mono text-emerald-400 tabular-nums">
-                      ${selectedItem.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                    </span>
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-1">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    {selectedItem.recipient}
+                  </h2>
+                  <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+                    ${selectedItem.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                    <span className="text-xs font-normal text-slate-400">USD</span>
                   </div>
                 </div>
 
-                <h2 className="text-sm font-semibold text-white mt-1">
+                <p className="text-xs text-slate-600 dark:text-zinc-300 font-sans">
                   {selectedItem.description}
-                </h2>
+                </p>
               </div>
 
-              {/* Inspector Body (Scrollable) */}
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto text-xs">
-                {/* Hold Reason Banner */}
-                <div className="p-3 rounded-md border border-amber-500/25 bg-amber-500/10 text-amber-300">
-                  <div className="font-semibold text-xs flex items-center gap-1.5 mb-1">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    <span>Policy Trigger: await_approval() Execution Gate</span>
+              {/* Middle Body Info */}
+              <div className="p-5 flex-1 overflow-y-auto space-y-4 text-xs">
+                {/* Reason Banner */}
+                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 space-y-1">
+                  <div className="font-semibold flex items-center gap-1.5 font-mono">
+                    <Shield className="h-4 w-4" />
+                    <span>Dual-Control Escrow Reason:</span>
                   </div>
-                  <p className="text-[11px] text-zinc-300 leading-relaxed font-mono">
-                    Transaction amount ${selectedItem.amount.toLocaleString("en-US")} exceeds autonomous auto-refund cap ($100.00) & tenant spend cap. Awaiting dual-authorization sign-off.
+                  <p className="text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
+                    Disbursement request of <strong>${selectedItem.amount.toLocaleString()}</strong> exceeds automated policy threshold ($50.00). Under dual-control protocol, execution is frozen until authorized by an executive officer (CFO).
                   </p>
                 </div>
 
-                {/* Slack Block Kit Message Preview */}
-                <div className="rounded-md border border-white/[0.07] bg-[#09090B] p-3">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-2 pb-1.5 border-b border-white/[0.05]">
-                    <span className="flex items-center gap-1.5 text-zinc-300">
-                      <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
-                      Slack Synchronized Notification (#finops-approvals)
-                    </span>
-                    <span className="text-emerald-400">DISPATCHED</span>
+                {/* Metadata Grid */}
+                <div className="grid grid-cols-2 gap-3 font-mono text-[11px]">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#141519] border border-slate-100 dark:border-white/[0.04] space-y-0.5">
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 block font-semibold">INITIATOR / AGENT</span>
+                    <span className="text-slate-800 dark:text-zinc-200 font-bold">{selectedItem.requested_by || "FinOps Executor"}</span>
                   </div>
-                  <div className="font-mono text-[11px] text-zinc-300 space-y-1">
-                    <div className="text-amber-400 font-semibold">
-                      :warning: *FinOps Approval Required* | Delegation: {selectedItem.delegation_id}
-                    </div>
-                    <div>*Recipient:* `{selectedItem.recipient}` | *Amount:* `${selectedItem.amount.toFixed(2)}`</div>
-                    <div className="text-zinc-500 text-[10px]">
-                      Slack Block Kit Actions: [Approve via Webhook] [Reject & Revoke Token]
-                    </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#141519] border border-slate-100 dark:border-white/[0.04] space-y-0.5">
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 block font-semibold">PAYMENT METHOD</span>
+                    <span className="text-slate-800 dark:text-zinc-200 font-bold">{selectedItem.action_type || "bank.wire_transfer"}</span>
                   </div>
                 </div>
 
-                {/* MCP Tool Call Payload Preview */}
-                <div className="rounded-md border border-white/[0.07] bg-[#09090B] p-3">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-2 pb-1.5 border-b border-white/[0.05]">
-                    <span className="flex items-center gap-1.5 text-zinc-300">
-                      <Code2 className="h-3.5 w-3.5 text-indigo-400" />
-                      Pending MCP Tool Call Payload
-                    </span>
-                    <span className="text-indigo-400">JSON-RPC 2.0</span>
-                  </div>
-                  <pre className="font-mono text-[11px] text-zinc-300 overflow-x-auto p-2 rounded bg-[#111114] border border-white/[0.04]">
-{JSON.stringify(
-  {
-    tool: "mcp.bank.wire_transfer",
-    parameters: {
-      recipient: selectedItem.recipient,
-      amount: selectedItem.amount,
-      delegation_id: selectedItem.delegation_id,
-      plan_hash: selectedItem.plan_hash?.slice(0, 16) + "...",
-      for_user: currentUser.role
-    }
-  },
-  null,
-  2
-)}
-                  </pre>
-                </div>
+                {/* Collapsible Raw JSON / Hash */}
+                <div>
+                  <button
+                    onClick={() => setShowRawPayload(!showRawPayload)}
+                    className="text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 font-mono text-[11px] transition-colors"
+                  >
+                    <span>{showRawPayload ? "Hide Technical Details" : "View Technical Details (JSON Payload & Plan Hash)"}</span>
+                    {showRawPayload ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  </button>
 
-                {/* Authority & Plan Hash Footprint */}
-                <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
-                  <div className="p-2 rounded bg-[#09090B] border border-white/[0.05]">
-                    <span className="text-zinc-500 block text-[10px]">REQUESTED BY</span>
-                    <span className="text-zinc-200">{selectedItem.requested_by} ({selectedItem.role})</span>
-                  </div>
-                  <div className="p-2 rounded bg-[#09090B] border border-white/[0.05]">
-                    <span className="text-zinc-500 block text-[10px]">PLAN HASH (SHA-256)</span>
-                    <span className="text-zinc-400 truncate block">{selectedItem.plan_hash}</span>
-                  </div>
+                  {showRawPayload && (
+                    <div className="mt-2 p-3 rounded-xl bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto border border-slate-800">
+                      <pre className="text-emerald-400 leading-tight">
+                        {JSON.stringify(selectedItem.payload || selectedItem, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Bottom Action Bar */}
-              <div className="p-3.5 bg-[#0E0E11] border-t border-white/[0.06] flex items-center justify-between">
-                <div className="text-xs font-mono text-zinc-500">
-                  {selectedItem.status === "HELD_FOR_APPROVAL" ? (
-                    currentUser.role === "intern" ? (
-                      <span className="text-rose-400">Policy lock: Intern cannot approve</span>
-                    ) : (
-                      <span>Dual sign-off authorized</span>
-                    )
-                  ) : (
-                    <span>Resolved: {selectedItem.resolved_by || "System"}</span>
-                  )}
-                </div>
+              {/* Bottom Action Footer */}
+              <div className="p-4 border-t border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] flex items-center justify-between">
+                <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-medium">
+                  {currentUser.role === "manager"
+                    ? "✓ Authorized for CFO signature (Sarah Chen)"
+                    : "🔒 Locked: Alex Rivera (Intern) lacks disbursement permission"}
+                </span>
 
                 {selectedItem.status === "HELD_FOR_APPROVAL" ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => handleAction(selectedItem.delegation_id, "REJECT")}
                       disabled={processingId !== null}
-                      className="px-3 py-1.5 rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 text-xs font-semibold transition-all disabled:opacity-50"
+                      className="px-4 py-2 rounded-lg border border-slate-300 dark:border-white/[0.1] hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-700 dark:text-zinc-300 hover:text-rose-600 text-xs font-semibold transition-colors disabled:opacity-50"
                     >
-                      Reject & Revoke Token
+                      Reject
                     </button>
+
                     <button
                       onClick={() => handleAction(selectedItem.delegation_id, "APPROVE")}
                       disabled={processingId !== null || currentUser.role === "intern"}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-hairline transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                      title={currentUser.role === "intern" ? "Locked for Interns" : "Approve and execute disbursement"}
+                      className={`px-6 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shadow-sm ${
+                        currentUser.role === "intern"
+                          ? "bg-slate-300 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500 cursor-not-allowed"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20"
+                      }`}
                     >
                       {processingId === selectedItem.delegation_id ? (
-                        <span className="animate-spin text-white">⟳</span>
+                        <>
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          <span>Finalizing...</span>
+                        </>
                       ) : (
-                        <Check className="h-3.5 w-3.5" />
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Approve & Disburse (${selectedItem.amount.toLocaleString()})</span>
+                        </>
                       )}
-                      <span>Approve & Release Execution</span>
                     </button>
                   </div>
                 ) : (
-                  <Link
-                    href="/receipts"
-                    className="flex items-center gap-1 text-xs font-mono text-emerald-400 hover:underline"
-                  >
-                    <span>View Cryptographic Receipt</span>
-                    <ArrowRight className="h-3 w-3" />
-                  </Link>
+                  <div className="text-xs font-mono font-semibold text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                    <span>This delegation ticket has been finalized ({selectedItem.status})</span>
+                  </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="p-16 text-center text-zinc-500 font-mono text-xs flex flex-col items-center justify-center h-full">
-              <Inbox className="h-8 w-8 text-zinc-600 mb-2" />
-              <span>Select a transaction from the queue to inspect details</span>
+            <div className="flex items-center justify-center h-full text-slate-400 dark:text-zinc-500 text-xs font-mono">
+              Select a delegation ticket on the left to review details.
             </div>
           )}
         </div>

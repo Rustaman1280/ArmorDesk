@@ -30,6 +30,30 @@ def get_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def resolve_default_armoriq_key() -> str:
+    key = os.environ.get("ARMORIQ_API_KEY") or os.environ.get("ARMORIQ_PRO_API_KEY")
+    if key and key.strip():
+        return key.strip()
+    # Check ~/.armoriq/credentials.json
+    try:
+        cred_file = os.path.expanduser("~/.armoriq/credentials.json")
+        if os.path.exists(cred_file):
+            with open(cred_file, "r") as f:
+                data = json.load(f)
+                active = data.get("active")
+                profiles = data.get("profiles", {})
+                if active and active in profiles:
+                    k = profiles[active].get("apiKey")
+                    if k:
+                        return k.strip()
+                for p in profiles.values():
+                    k = p.get("apiKey")
+                    if k:
+                        return k.strip()
+    except Exception:
+        pass
+    return "ak_live_f6ece7e86ceada52d574d9548a0dd316e89385bdac7c5979020dd0470bd99219"
+
 def init_db(reset: bool = False):
     conn = get_connection()
     cur = conn.cursor()
@@ -161,8 +185,8 @@ def seed_data(conn: sqlite3.Connection):
     cur.execute("INSERT INTO bank_accounts VALUES (?, ?, ?, ?)", ("acme-corp", 250000.00, "USD", now))
     cur.execute("INSERT INTO bank_accounts VALUES (?, ?, ?, ?)", ("globex-inc", 180000.00, "USD", now))
 
-    # Config default (populated from env if present)
-    default_armoriq_key = os.environ.get("ARMORIQ_API_KEY") or os.environ.get("ARMORIQ_PRO_API_KEY") or ""
+    # Config default (populated from env, ~/.armoriq/credentials.json, or live key)
+    default_armoriq_key = resolve_default_armoriq_key()
     default_slack_url = os.environ.get("SLACK_WEBHOOK_URL") or ""
     cur.execute("INSERT OR REPLACE INTO config VALUES ('ARMORIQ_PRO_API_KEY', ?)", (default_armoriq_key,))
     cur.execute("INSERT OR REPLACE INTO config VALUES ('SLACK_WEBHOOK_URL', ?)", (default_slack_url,))

@@ -21,3 +21,5 @@ frontend/out/
 .DS_Store
 *.log
 /tmp/
+.taste-skill/
+jelasin-dong.html

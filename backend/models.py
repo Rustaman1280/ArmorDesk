@@ -151,3 +151,5 @@ class ConfigResponse(BaseModel):
     slack_webhook_configured: bool
     mode: str
     sdk_version: Optional[str] = "0.6.10"
+    backend_url: Optional[str] = "https://staging-api.armoriq.ai"
+    account_email: Optional[str] = "rustamandelvianova@gmail.com"

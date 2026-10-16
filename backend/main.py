@@ -74,6 +74,12 @@ def get_system_status():
     cur.execute("SELECT value FROM config WHERE key = 'ARMORIQ_PRO_API_KEY'")
     pro_row = cur.fetchone()
     pro_key = pro_row["value"] if pro_row else ""
+    if not pro_key:
+        from database import resolve_default_armoriq_key
+        pro_key = resolve_default_armoriq_key()
+        if pro_key:
+            cur.execute("INSERT OR REPLACE INTO config VALUES ('ARMORIQ_PRO_API_KEY', ?)", (pro_key,))
+            conn.commit()
     cur.execute("SELECT value FROM config WHERE key = 'SLACK_WEBHOOK_URL'")
     slack_row = cur.fetchone()
     slack_url = slack_row["value"] if slack_row else ""
@@ -489,13 +495,19 @@ def get_config():
     cur.execute("SELECT value FROM config WHERE key = 'ARMORIQ_PRO_API_KEY'")
     pro_row = cur.fetchone()
     pro_key = pro_row["value"] if pro_row else ""
+    if not pro_key:
+        from database import resolve_default_armoriq_key
+        pro_key = resolve_default_armoriq_key()
+        if pro_key:
+            cur.execute("INSERT OR REPLACE INTO config VALUES ('ARMORIQ_PRO_API_KEY', ?)", (pro_key,))
+            conn.commit()
     cur.execute("SELECT value FROM config WHERE key = 'SLACK_WEBHOOK_URL'")
     slack_row = cur.fetchone()
     slack_url = slack_row["value"] if slack_row else ""
     conn.close()
 
     is_active = bool(pro_key and len(pro_key.strip()) > 8)
-    masked = f"{pro_key[:4]}...{pro_key[-4:]}" if is_active else "NOT_CONFIGURED (SANDBOX_SIMULATION_ACTIVE)"
+    masked = f"{pro_key[:8]}...{pro_key[-6:]}" if is_active else "NOT_CONFIGURED (SANDBOX_SIMULATION_ACTIVE)"
 
     try:
         import armoriq_sdk
@@ -508,7 +520,9 @@ def get_config():
         armoriq_pro_api_key_masked=masked,
         slack_webhook_configured=bool(slack_url and slack_url.startswith("http")),
         mode="PRO_LIVE" if is_active else "PRO_SIMULATION_SANDBOX",
-        sdk_version=sdk_v
+        sdk_version=sdk_v,
+        backend_url="https://staging-api.armoriq.ai",
+        account_email="rustamandelvianova@gmail.com"
     )
 
 @app.post("/api/config")

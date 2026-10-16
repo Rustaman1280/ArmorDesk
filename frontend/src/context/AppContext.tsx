@@ -51,6 +51,8 @@ interface AppContextType {
   reloadTrigger: number;
   triggerReload: () => void;
   pendingApprovalsCount: number;
+  theme: "dark" | "light";
+  toggleTheme: () => void;
   toasts: ToastMessage[];
   addToast: (title: string, message: string, type?: "info" | "success" | "warning" | "error") => void;
   removeToast: (id: string) => void;
@@ -67,7 +69,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [proActive, setProActive] = useState<boolean>(false);
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+  const [theme, setTheme] = useState<"dark" | "light">("light");
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  useEffect(() => {
+    // Read theme preference from localStorage, default to light
+    const savedTheme = localStorage.getItem("armordesk_theme") as "dark" | "light" | null;
+    if (savedTheme === "dark") {
+      setTheme("dark");
+      document.documentElement.classList.add("dark");
+    } else {
+      setTheme("light");
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      localStorage.setItem("armordesk_theme", next);
+      if (next === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      return next;
+    });
+  };
   const [mcpLatencies, setMcpLatencies] = useState({ email: 12, crm: 8, bank: 15 });
 
   const triggerReload = () => setReloadTrigger((prev) => prev + 1);
@@ -170,6 +198,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         reloadTrigger,
         triggerReload,
         pendingApprovalsCount,
+        theme,
+        toggleTheme,
         toasts,
         addToast,
         removeToast,
