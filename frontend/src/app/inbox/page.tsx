@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { api, ApprovalItem } from "@/lib/api";
+import { playVoiceAlert, playExecutiveBriefing } from "@/lib/audio";
 import {
   Inbox,
   ShieldCheck,
@@ -23,7 +24,13 @@ import {
   Check,
   X,
   RefreshCw,
-  Shield
+  Shield,
+  Headphones,
+  Mic,
+  MicOff,
+  Volume2,
+  Bot,
+  Zap
 } from "lucide-react";
 
 export default function ApprovalInboxPage() {
@@ -34,6 +41,12 @@ export default function ApprovalInboxPage() {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [showRawPayload, setShowRawPayload] = useState<boolean>(false);
   const [isSimulatingQuick, setIsSimulatingQuick] = useState<number | null>(null);
+
+  // ElevenLabs Voice Assistant State
+  const [isBriefingLoading, setIsBriefingLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [recognizedText, setRecognizedText] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     loadApprovals();
@@ -103,6 +116,158 @@ export default function ApprovalInboxPage() {
     }
   };
 
+  // 1. ElevenLabs Audio Briefing
+  const handlePlayBriefing = async () => {
+    setIsBriefingLoading(true);
+    addToast(
+      "Executive Briefing Requested",
+      "ElevenLabs synthesizing executive summary of pending escrow holdings...",
+      "info"
+    );
+    try {
+      const res = await playExecutiveBriefing(tenantId, currentUser.name);
+      addToast("Briefing Active", res.script, "success");
+    } catch (e: any) {
+      addToast("Briefing Error", e.message, "error");
+    } finally {
+      setIsBriefingLoading(false);
+    }
+  };
+
+  // 2. Voice-Activated Approval Handler
+  const handleVoiceApproval = async (actionCommand: "APPROVE" | "REJECT") => {
+    const topPending = approvals.find((a) => a.status === "HELD_FOR_APPROVAL");
+    if (!topPending) {
+      playVoiceAlert("No pending transactions awaiting authorization in escrow queue.", "executive");
+      addToast("Queue Empty", "No pending transactions in escrow to authorize.", "info");
+      return;
+    }
+
+    if (currentUser.role === "intern") {
+      playVoiceAlert(
+        "Action denied. Intern role does not have authorization authority under protocol governance.",
+        "security"
+      );
+      addToast(
+        "Voice Authorization Denied",
+        "Intern account cannot sign or approve escrow disbursements.",
+        "error"
+      );
+      return;
+    }
+
+    await handleAction(topPending.delegation_id, actionCommand);
+
+    if (actionCommand === "APPROVE") {
+      playVoiceAlert(
+        "Delegation approved. Funds released and signed receipt generated.",
+        "executive"
+      );
+    } else {
+      playVoiceAlert(
+        "Delegation rejected. Transaction cancelled and audit log committed.",
+        "executive"
+      );
+    }
+  };
+
+  // 3. Web Speech Recognition for Hold-to-Speak
+  const startVoiceRecognition = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      addToast(
+        "Speech Recognition API Unavailable",
+        "Your browser does not support Web Speech Recognition. You can trigger voice approvals directly.",
+        "warning"
+      );
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setRecognizedText("Listening... (Say 'Approve' or 'Reject')");
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript.toLowerCase().trim();
+        setRecognizedText(`Heard: "${transcript}"`);
+
+        if (
+          transcript.includes("approve") ||
+          transcript.includes("accept") ||
+          transcript.includes("yes") ||
+          transcript.includes("setuju") ||
+          transcript.includes("release")
+        ) {
+          handleVoiceApproval("APPROVE");
+        } else if (
+          transcript.includes("reject") ||
+          transcript.includes("deny") ||
+          transcript.includes("block") ||
+          transcript.includes("tolak") ||
+          transcript.includes("cancel")
+        ) {
+          handleVoiceApproval("REJECT");
+        } else {
+          addToast(
+            "Command Unrecognized",
+            `Recognized: "${transcript}". Please say "Approve" or "Reject".`,
+            "warning"
+          );
+        }
+      };
+
+      recognition.onerror = (err: any) => {
+        console.warn("Speech recognition error:", err);
+        setIsListening(false);
+        setRecognizedText(null);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setTimeout(() => setRecognizedText(null), 3500);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err: any) {
+      console.error("SpeechRecognition initialization failed:", err);
+      setIsListening(false);
+    }
+  };
+
+  const stopVoiceRecognition = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
+    setIsListening(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
+
   const filtered = approvals.filter((a) => {
     if (filterStatus === "ALL") return true;
     return a.status === filterStatus;
@@ -158,6 +323,94 @@ export default function ApprovalInboxPage() {
           </div>
         </div>
       )}
+
+      {/* 2.5. ElevenLabs Executive Assistant Interactive Toolbar */}
+      <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#101115] p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+            <Headphones className="h-4.5 w-4.5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+                <span>ElevenLabs Executive Assistant</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" />
+              </span>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
+                VOICE-AI v2.5
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 font-sans mt-0.5">
+              Live hands-free escrow briefings & voice-commanded authorization for executive sign-off.
+            </p>
+            {recognizedText && (
+              <div className="mt-1 text-[11px] font-mono text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 inline-block animate-pulse">
+                🎙️ {recognizedText}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Action A: Audio Briefing */}
+          <button
+            type="button"
+            onClick={handlePlayBriefing}
+            disabled={isBriefingLoading}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-[#16171d] hover:bg-slate-100 dark:hover:bg-[#1F2026] text-xs font-mono font-semibold transition-all shadow-xs disabled:opacity-50"
+            title="Listen to an AI speech summary of all pending escrow holds"
+          >
+            {isBriefingLoading ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-purple-500" />
+            ) : (
+              <Headphones className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+            )}
+            <span>🎧 Audio Briefing</span>
+          </button>
+
+          {/* Action B: Hold to Speak (Voice Approval) */}
+          <button
+            type="button"
+            onPointerDown={startVoiceRecognition}
+            onPointerUp={stopVoiceRecognition}
+            onPointerLeave={stopVoiceRecognition}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-mono font-semibold transition-all select-none shadow-xs ${
+              isListening
+                ? "bg-rose-500 border-rose-600 text-white animate-pulse shadow-rose-500/20"
+                : "border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-[#16171d] hover:bg-slate-100 dark:hover:bg-[#1F2026] text-slate-800 dark:text-zinc-200"
+            }`}
+            title="Hold down this button and speak 'Approve' or 'Reject' to execute top held ticket"
+          >
+            {isListening ? (
+              <Mic className="h-3.5 w-3.5 animate-bounce" />
+            ) : (
+              <Mic className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            )}
+            <span>{isListening ? "Listening... (Release to Act)" : "🎙️ Hold to Speak (Voice Approval)"}</span>
+          </button>
+
+          {/* Quick Fallback Command Buttons (for no-mic environments) */}
+          <div className="flex items-center rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#16171d] p-0.5 text-[11px] font-mono">
+            <button
+              type="button"
+              onClick={() => handleVoiceApproval("APPROVE")}
+              className="px-2 py-1 rounded hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold"
+              title="Voice simulator shortcut: Say 'Approve'"
+            >
+              "Approve"
+            </button>
+            <span className="text-slate-300 dark:text-zinc-600">|</span>
+            <button
+              type="button"
+              onClick={() => handleVoiceApproval("REJECT")}
+              className="px-2 py-1 rounded hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 font-semibold"
+              title="Voice simulator shortcut: Say 'Reject'"
+            >
+              "Reject"
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* 3. Filter Tabs */}
       <div className="flex items-center gap-2 text-xs">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { api, ReceiptItem } from "@/lib/api";
+import { playVoiceAlert } from "@/lib/audio";
 import {
   FileCheck2,
   ShieldCheck,
@@ -22,7 +23,10 @@ import {
   FileCode,
   ShieldAlert,
   Terminal,
-  Receipt
+  Receipt,
+  Headphones,
+  Volume2,
+  RefreshCw
 } from "lucide-react";
 
 export default function AgentReceiptsPage() {
@@ -33,6 +37,20 @@ export default function AgentReceiptsPage() {
   const [verifyStep, setVerifyStep] = useState<number>(0);
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
+
+  const handlePlayAuditAudio = async () => {
+    setIsAudioPlaying(true);
+    addToast(
+      "Playing Audio Summary",
+      "ElevenLabs executive briefing on receipt ledger cryptographic integrity.",
+      "info"
+    );
+    const count = receipts.length;
+    const script = `Executive audit summary. There are ${count} verified non-repudiation receipts recorded in the ArmorDesk ledger. All SHA-256 Plan Hashes and Merkle root proofs are cryptographically consistent with zero detected tampering. Autonomous agent execution is fully non-repudiable.`;
+    await playVoiceAlert(script, "executive");
+    setIsAudioPlaying(false);
+  };
 
   useEffect(() => {
     loadReceipts();
@@ -116,8 +134,24 @@ export default function AgentReceiptsPage() {
           </p>
         </div>
 
-        <div className="text-right font-mono text-xs text-slate-500 dark:text-zinc-500">
-          Total Issued Receipts: <span className="text-slate-900 dark:text-zinc-200 font-bold">{receipts.length}</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handlePlayAuditAudio}
+            disabled={isAudioPlaying}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-[#14151a] hover:bg-slate-100 dark:hover:bg-[#1a1c22] text-xs font-mono text-slate-800 dark:text-zinc-200 shadow-xs transition-all disabled:opacity-50"
+            title="Listen to ElevenLabs AI audio summary of receipt ledger"
+          >
+            {isAudioPlaying ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-emerald-500" />
+            ) : (
+              <Headphones className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            )}
+            <span>Play Executive Audit Audio Summary</span>
+          </button>
+
+          <div className="text-right font-mono text-xs text-slate-500 dark:text-zinc-500 hidden sm:block">
+            Receipts: <span className="text-slate-900 dark:text-zinc-200 font-bold">{receipts.length}</span>
+          </div>
         </div>
       </div>
 

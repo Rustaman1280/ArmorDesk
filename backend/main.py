@@ -19,7 +19,9 @@ from models import (
     ScenarioRunRequest, ScenarioRunResponse,
     GauntletSimulateRequest, GauntletSimulateResponse,
     ConfigUpdateRequest, ConfigResponse,
-    MCPGatewayInfo, MCPToolDefinition, MCPTestToolRequest
+    MCPGatewayInfo, MCPToolDefinition, MCPTestToolRequest,
+    VoiceSynthesizeRequest, VoiceBriefingRequest,
+    LoginRequest, RegisterRequest
 )
 from agents.finops_crew import FinOpsCrewOrchestrator
 from armoriq_engine.core import generate_plan_hash, build_merkle_tree, verify_merkle_root
@@ -27,6 +29,7 @@ from armoriq_engine.client import ArmorIQClient
 from mcp_servers import bank_payments_mcp, crm_accounting_mcp, email_files_mcp
 from services.compliance_generator import generate_compliance_bundle
 from services.slack_notifier import send_slack_alert
+from services.elevenlabs_service import synthesize_speech, build_executive_briefing_text
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -943,7 +946,144 @@ async def mcp_jsonrpc_gateway(payload: Dict[str, Any]):
         "error": {"code": -32601, "message": f"Method '{method}' not found"}
     }
 
-# 12. Reset Sandbox
+# 12. ElevenLabs Voice AI Endpoints
+@app.post("/api/voice/synthesize")
+def voice_synthesize(req: VoiceSynthesizeRequest):
+    """Synthesizes voice alert or briefing via ElevenLabs with zero-crash fallback."""
+    res = synthesize_speech(req.text, voice_type=req.voice_type, api_key=req.api_key)
+    return res
+
+@app.post("/api/voice/briefing")
+def voice_briefing(req: VoiceBriefingRequest):
+    """Generates an executive voice briefing summarizing held transactions for a tenant."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM tenants WHERE id = ?", (req.tenant_id,))
+    t_row = cur.fetchone()
+    tenant_name = t_row["name"] if t_row else "Corporate Treasury"
+
+    cur.execute(
+        "SELECT recipient, amount, description FROM approvals WHERE tenant_id = ? AND status = 'HELD_FOR_APPROVAL' ORDER BY created_at DESC",
+        (req.tenant_id,)
+    )
+    pending_rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    script = build_executive_briefing_text(tenant_name, req.user_name, pending_rows)
+    synth_res = synthesize_speech(script, voice_type="executive", api_key=req.api_key)
+    synth_res["script"] = script
+    synth_res["pending_count"] = len(pending_rows)
+    return synth_res
+
+# 13. Authentication & Multi-Tenant Account Switching
+@app.post("/api/auth/login")
+def auth_login(req: LoginRequest):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    target_tenant = req.tenant_id or "acme-corp"
+    cur.execute("SELECT id, name, spend_limit, policy_rules FROM tenants WHERE id = ?", (target_tenant,))
+    tenant_row = cur.fetchone()
+    if not tenant_row:
+        cur.execute("SELECT id, name, spend_limit, policy_rules FROM tenants LIMIT 1")
+        tenant_row = cur.fetchone()
+
+    cur.execute("SELECT balance, currency FROM bank_accounts WHERE tenant_id = ?", (tenant_row["id"],))
+    b_row = cur.fetchone()
+    conn.close()
+
+    # Determine user identity based on email or default
+    if "intern" in req.email.lower() or "alex" in req.email.lower():
+        user = {
+            "name": "Alex Rivera",
+            "email": req.email,
+            "role": "intern",
+            "title": "Junior FinOps Intern",
+            "avatar": "AR",
+            "scopeSummary": "Restricted View-Only Scope · Financial Actions Blocked"
+        }
+    elif "marcus" in req.email.lower() or target_tenant == "globex-inc":
+        user = {
+            "name": "Marcus Vance",
+            "email": req.email or "marcus.vance@globex.io",
+            "role": "manager",
+            "title": "VP Treasury & Risk",
+            "avatar": "MV",
+            "scopeSummary": "Clean Slate Treasury · Full Policy Signing Authority"
+        }
+    else:
+        user = {
+            "name": "Sarah Chen",
+            "email": req.email or "sarah.chen@acme.com",
+            "role": "manager",
+            "title": "CFO · FinOps Lead",
+            "avatar": "SC",
+            "scopeSummary": "Full Treasury & Wire Transfer Approval Authority"
+        }
+
+    return {
+        "status": "AUTHENTICATED",
+        "token": f"jwt_mock_{uuid.uuid4().hex}",
+        "user": user,
+        "tenant": {
+            "id": tenant_row["id"],
+            "name": tenant_row["name"],
+            "spend_limit": float(tenant_row["spend_limit"]),
+            "balance": float(b_row["balance"]) if b_row else 0.0,
+            "currency": b_row["currency"] if b_row else "USD"
+        }
+    }
+
+@app.post("/api/auth/register")
+def auth_register(req: RegisterRequest):
+    tenant_id = req.company_name.lower().replace(" ", "-").replace(".", "").replace(",", "")[:16]
+    if not tenant_id:
+        tenant_id = f"tenant-{uuid.uuid4().hex[:6]}"
+
+    conn = get_connection()
+    cur = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+
+    default_rules = {
+        "auto_refund_limit": 50.0,
+        "max_spend_limit": 1000.0,
+        "vendor_allowlist": ["AWS Cloud", "Stripe Inc", "Datadog"]
+    }
+
+    cur.execute(
+        "INSERT OR REPLACE INTO tenants VALUES (?, ?, ?, ?, ?)",
+        (tenant_id, req.company_name, 1000.0, json.dumps(default_rules), now)
+    )
+    cur.execute(
+        "INSERT OR REPLACE INTO bank_accounts VALUES (?, ?, ?, ?)",
+        (tenant_id, float(req.initial_deposit), "USD", now)
+    )
+    conn.commit()
+    conn.close()
+
+    user = {
+        "name": req.name,
+        "email": req.email,
+        "role": "manager",
+        "title": "Chief Executive Officer",
+        "avatar": "".join([part[0].upper() for part in req.name.split()[:2]]) or "US",
+        "scopeSummary": "Administrator · Full Policy Signing Authority"
+    }
+
+    return {
+        "status": "REGISTERED",
+        "token": f"jwt_mock_{uuid.uuid4().hex}",
+        "user": user,
+        "tenant": {
+            "id": tenant_id,
+            "name": req.company_name,
+            "spend_limit": 1000.0,
+            "balance": float(req.initial_deposit),
+            "currency": "USD"
+        }
+    }
+
+# 14. Reset Sandbox
 @app.post("/api/reset")
 def reset_sandbox():
     init_db(reset=True)

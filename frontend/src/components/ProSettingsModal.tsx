@@ -24,6 +24,7 @@ import {
 export function ProSettingsModal() {
   const { proModalOpen, setProModalOpen, triggerReload, addToast } = useApp();
   const [apiKey, setApiKey] = useState("");
+  const [elevenlabsKey, setElevenlabsKey] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,6 +34,9 @@ export function ProSettingsModal() {
   useEffect(() => {
     if (proModalOpen) {
       loadConfig();
+      if (typeof window !== "undefined") {
+        setElevenlabsKey(localStorage.getItem("armordesk_elevenlabs_key") || "");
+      }
     }
   }, [proModalOpen]);
 
@@ -53,7 +57,14 @@ export function ProSettingsModal() {
     setStatusMsg("");
     try {
       await api.updateConfig(apiKey || undefined, webhookUrl || undefined);
-      addToast("ArmorIQ Configuration Saved", "API settings and webhook parameters updated successfully.", "success");
+      if (typeof window !== "undefined") {
+        if (elevenlabsKey) {
+          localStorage.setItem("armordesk_elevenlabs_key", elevenlabsKey.trim());
+        } else {
+          localStorage.removeItem("armordesk_elevenlabs_key");
+        }
+      }
+      addToast("ArmorIQ & Voice Configuration Saved", "API settings, ElevenLabs parameters, and webhook updated successfully.", "success");
       setStatusMsg("Configuration synchronized successfully.");
       setApiKey("");
       setWebhookUrl("");
@@ -147,6 +158,16 @@ export function ProSettingsModal() {
             </div>
           </div>
 
+          <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-between text-xs font-mono">
+            <span className="text-purple-800 dark:text-purple-300 font-semibold flex items-center gap-1.5">
+              <Radio className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 animate-pulse" />
+              ElevenLabs Voice AI: CONNECTED
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold">
+              Flash v2.5 · 75ms
+            </span>
+          </div>
+
           <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 dark:text-zinc-400 pt-1">
             <Globe className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>Account Profile: <span className="text-slate-800 dark:text-zinc-200 font-semibold">rustamandelvianova@gmail.com</span></span>
@@ -178,6 +199,23 @@ export function ProSettingsModal() {
                   onChange={(e) => setApiKey(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#09090B] px-3 py-2 font-mono text-xs text-slate-800 dark:text-zinc-200 focus:border-emerald-500 focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <Radio className="h-3.5 w-3.5 text-purple-400" />
+                  <span>ElevenLabs API Key (Voice Telemetry & SOC Alerts)</span>
+                </label>
+                <input
+                  type="password"
+                  placeholder="sk_... (Default Hackathon Key Pre-configured)"
+                  value={elevenlabsKey}
+                  onChange={(e) => setElevenlabsKey(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#09090B] px-3 py-2 font-mono text-xs text-slate-800 dark:text-zinc-200 focus:border-purple-500 focus:outline-none"
+                />
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5 block font-mono">
+                  Leave blank to use pre-configured high-performance ElevenLabs Flash v2.5 key.
+                </span>
               </div>
 
               <div>

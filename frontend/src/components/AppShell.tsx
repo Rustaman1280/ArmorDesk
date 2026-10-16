@@ -6,9 +6,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { ProSettingsModal } from "@/components/ProSettingsModal";
 import { ToastContainer } from "@/components/ToastContainer";
+import { AuthModal } from "@/components/AuthModal";
+import { useApp } from "@/context/AppContext";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { authModalOpen, setAuthModalOpen } = useApp();
   const isLandingPage = pathname === "/";
 
   if (isLandingPage) {
@@ -17,6 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
         <ProSettingsModal />
         <ToastContainer />
+        <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       </div>
     );
   }
@@ -39,6 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <ProSettingsModal />
       <ToastContainer />
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 }

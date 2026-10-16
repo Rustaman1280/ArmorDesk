@@ -25,6 +25,13 @@ export const AVAILABLE_USERS: UserProfile[] = [
     title: "Junior FinOps Intern",
     avatar: "AR",
     scopeSummary: "Restricted View-Only Scope · Financial Actions Blocked"
+  },
+  {
+    name: "Marcus Vance",
+    role: "manager",
+    title: "VP Treasury & Risk",
+    avatar: "MV",
+    scopeSummary: "Clean Slate Treasury · Full Policy Signing Authority"
   }
 ];
 
@@ -46,6 +53,10 @@ interface AppContextType {
   currentTenant?: TenantInfo;
   proModalOpen: boolean;
   setProModalOpen: (open: boolean) => void;
+  authModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+  loginAsDemoSeeded: () => void;
+  loginAsDemoClean: () => void;
   proActive: boolean;
   setProActive: (active: boolean) => void;
   reloadTrigger: number;
@@ -66,11 +77,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile>(AVAILABLE_USERS[0]);
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
   const [proModalOpen, setProModalOpen] = useState<boolean>(false);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [proActive, setProActive] = useState<boolean>(false);
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const loginAsDemoSeeded = () => {
+    setTenantId("acme-corp");
+    setCurrentUser(AVAILABLE_USERS[0]);
+    addToast(
+      "Switched to Seeded Demo (Acme Corp)",
+      "Active approvals ($8k AWS bill), receipts, and multi-agent audit traces loaded.",
+      "success"
+    );
+    triggerReload();
+  };
+
+  const loginAsDemoClean = () => {
+    setTenantId("globex-inc");
+    setCurrentUser(AVAILABLE_USERS[2]);
+    addToast(
+      "Switched to Clean Slate (Globex Inc)",
+      "Pristine tenant loaded with 0 pending approvals and a clean audit buffer.",
+      "info"
+    );
+    triggerReload();
+  };
 
   useEffect(() => {
     // Read theme preference from localStorage, default to light
@@ -193,6 +227,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentTenant,
         proModalOpen,
         setProModalOpen,
+        authModalOpen,
+        setAuthModalOpen,
+        loginAsDemoSeeded,
+        loginAsDemoClean,
         proActive,
         setProActive,
         reloadTrigger,

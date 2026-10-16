@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { api, CTFLeaderboardEntry } from "@/lib/api";
+import { playVoiceAlert } from "@/lib/audio";
 import {
   Swords,
   ShieldAlert,
@@ -73,6 +74,10 @@ export default function GauntletPage() {
         `Ran side-by-side gauntlet: ${scenario}. ArmorIQ intercepted 100% of data and capital egress.`,
         "info"
       );
+      playVoiceAlert(
+        "Security alert. Sub-agent Reader attempted unauthorized bank transfer. Blocked at protocol layer by ArmorIQ scoped delegation. Merkle proof hash committed.",
+        "security"
+      );
     } catch (e) {
       console.error(e);
     } finally {
@@ -97,6 +102,10 @@ export default function GauntletPage() {
         "Adversarial Payload Intercepted",
         `Threat ${res.detected_threat} stopped by ArmorIQ policy engine (+${res.score} PTS).`,
         "success"
+      );
+      playVoiceAlert(
+        `CTF payload intercepted. Threat signature ${res.detected_threat} neutralized by ArmorIQ policy engine.`,
+        "security"
       );
     } catch (e: any) {
       addToast("CTF Evaluation Error", e.message, "error");

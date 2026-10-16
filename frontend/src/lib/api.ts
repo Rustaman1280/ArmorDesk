@@ -302,5 +302,41 @@ export const api = {
       })
     });
     return res.json();
+  },
+
+  async synthesizeVoice(text: string, voiceType: "security" | "executive" = "security", apiKey?: string) {
+    const res = await fetch(`${API_BASE}/voice/synthesize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voice_type: voiceType, api_key: apiKey })
+    });
+    return res.json();
+  },
+
+  async getVoiceBriefing(tenantId: string = "acme-corp", userName: string = "Sarah Chen", apiKey?: string) {
+    const res = await fetch(`${API_BASE}/voice/briefing`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tenant_id: tenantId, user_name: userName, api_key: apiKey })
+    });
+    return res.json();
+  },
+
+  async login(email: string, password: string = "demo123", tenantId?: string) {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, tenant_id: tenantId })
+    });
+    return res.json();
+  },
+
+  async register(email: string, name: string, companyName: string, password: string = "demo123", initialDeposit: number = 100000.0) {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, name, company_name: companyName, password, initial_deposit: initialDeposit })
+    });
+    return res.json();
   }
 };

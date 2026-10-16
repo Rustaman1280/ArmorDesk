@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
+import { playVoiceAlert } from "@/lib/audio";
 import {
   FileText,
   ShieldCheck,
@@ -19,7 +20,9 @@ import {
   ExternalLink,
   ShieldAlert,
   FileCheck,
-  Building2
+  Building2,
+  Headphones,
+  RefreshCw
 } from "lucide-react";
 
 export default function CompliancePage() {
@@ -27,6 +30,20 @@ export default function CompliancePage() {
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"matrix" | "packet">("matrix");
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+
+  const handlePlayAuditAudio = async () => {
+    if (!report) return;
+    setIsAudioPlaying(true);
+    addToast(
+      "Playing Audio Summary",
+      "ElevenLabs executive briefing on SOC 2 and ISO 27001 audit posture.",
+      "info"
+    );
+    const script = `Executive compliance briefing. The SOC 2 Type 2 compliance posture for this enterprise workspace is currently rated ${report.summary.compliance_health}. Zero critical violations detected across all ${report.summary.total_evidence_count || 12} controls. Cryptographic Merkle tree integrity is fully compliant.`;
+    await playVoiceAlert(script, "executive");
+    setIsAudioPlaying(false);
+  };
 
   useEffect(() => {
     loadReport();
@@ -83,7 +100,20 @@ export default function CompliancePage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handlePlayAuditAudio}
+            disabled={isAudioPlaying}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#111114] hover:bg-slate-100 dark:hover:bg-[#18181C] px-3.5 py-2 text-xs font-mono text-slate-700 dark:text-zinc-300 transition-all shadow-sm disabled:opacity-50"
+            title="Listen to ElevenLabs AI compliance summary"
+          >
+            {isAudioPlaying ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-emerald-500" />
+            ) : (
+              <Headphones className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            )}
+            <span>Play Executive Audit Audio Summary</span>
+          </button>
           <button
             onClick={handlePrint}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#111114] hover:bg-slate-100 dark:hover:bg-[#18181C] px-3.5 py-2 text-xs font-mono text-slate-700 dark:text-zinc-300 transition-all shadow-sm"

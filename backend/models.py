@@ -176,3 +176,26 @@ class MCPTestToolRequest(BaseModel):
     user_name: str = "Sarah Chen"
     tenant_id: str = "acme-corp"
 
+class VoiceSynthesizeRequest(BaseModel):
+    text: str
+    voice_type: str = "security"  # 'security' | 'executive'
+    api_key: Optional[str] = None
+
+class VoiceBriefingRequest(BaseModel):
+    tenant_id: str = "acme-corp"
+    user_name: str = "Sarah Chen"
+    api_key: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str = "demo123"
+    tenant_id: Optional[str] = None
+
+class RegisterRequest(BaseModel):
+    email: str
+    name: str
+    company_name: str
+    password: str = "demo123"
+    initial_deposit: float = 100000.0
+
+
