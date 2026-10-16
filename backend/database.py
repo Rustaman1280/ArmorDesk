@@ -8,6 +8,21 @@ import os
 from pathlib import Path
 from datetime import datetime, timezone
 
+def _load_env():
+    for base in [Path(__file__).parent.parent, Path(__file__).parent]:
+        env_file = base / ".env"
+        if env_file.exists():
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip().strip("'\"")
+                        if k and not os.environ.get(k):
+                            os.environ[k] = v
+
+_load_env()
+
 DB_PATH = os.environ.get("ARMORDESK_DB_PATH", str(Path(__file__).parent / "armordesk.db"))
 
 def get_connection():
@@ -146,9 +161,11 @@ def seed_data(conn: sqlite3.Connection):
     cur.execute("INSERT INTO bank_accounts VALUES (?, ?, ?, ?)", ("acme-corp", 250000.00, "USD", now))
     cur.execute("INSERT INTO bank_accounts VALUES (?, ?, ?, ?)", ("globex-inc", 180000.00, "USD", now))
 
-    # Config default
-    cur.execute("INSERT OR REPLACE INTO config VALUES ('ARMORIQ_PRO_API_KEY', '')")
-    cur.execute("INSERT OR REPLACE INTO config VALUES ('SLACK_WEBHOOK_URL', '')")
+    # Config default (populated from env if present)
+    default_armoriq_key = os.environ.get("ARMORIQ_API_KEY") or os.environ.get("ARMORIQ_PRO_API_KEY") or ""
+    default_slack_url = os.environ.get("SLACK_WEBHOOK_URL") or ""
+    cur.execute("INSERT OR REPLACE INTO config VALUES ('ARMORIQ_PRO_API_KEY', ?)", (default_armoriq_key,))
+    cur.execute("INSERT OR REPLACE INTO config VALUES ('SLACK_WEBHOOK_URL', ?)", (default_slack_url,))
 
     # Sample Traces
     sample_traces = [

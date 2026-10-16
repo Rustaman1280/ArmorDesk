@@ -51,7 +51,20 @@ class ArmorIQClient:
     cryptographic hashing and Merkle verification compliant with ArmorIQ specifications.
     """
     def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.armoriq.ai/v1"):
-        self.api_key = (api_key or os.getenv("ARMORIQ_API_KEY") or os.getenv("ARMORIQ_PRO_API_KEY") or "").strip()
+        key = api_key or os.getenv("ARMORIQ_API_KEY") or os.getenv("ARMORIQ_PRO_API_KEY")
+        if not key:
+            try:
+                from database import get_connection
+                conn = get_connection()
+                cur = conn.cursor()
+                cur.execute("SELECT value FROM config WHERE key = 'ARMORIQ_PRO_API_KEY'")
+                row = cur.fetchone()
+                if row and row["value"]:
+                    key = row["value"]
+                conn.close()
+            except Exception:
+                pass
+        self.api_key = (key or "").strip()
         self.base_url = base_url.rstrip("/")
         self.sdk_available = ARMORIQ_SDK_AVAILABLE
         self.sdk_client = None
@@ -100,12 +113,27 @@ class ArmorIQClient:
         Captures an agent plan using official armoriq-sdk if live,
         otherwise formats canonical plan representation locally.
         """
+        # Ensure plan format has 'steps' as required by official armoriq-sdk
+        normalized_plan = dict(plan)
+        if "steps" not in normalized_plan:
+            action = normalized_plan.get("action", "execute")
+            mcp = "bank" if "bank" in action else "general"
+            normalized_plan["steps"] = [
+                {
+                    "action": action,
+                    "mcp": mcp,
+                    "params": {k: v for k, v in plan.items() if k not in ("steps", "goal")}
+                }
+            ]
+        if "goal" not in normalized_plan:
+            normalized_plan["goal"] = prompt
+
         if self.sdk_client:
             try:
-                return self.sdk_client.capture_plan(llm=llm, prompt=prompt, plan=plan)
+                return self.sdk_client.capture_plan(llm=llm, prompt=prompt, plan=normalized_plan)
             except Exception as e:
                 logger.warning("Official capture_plan fallback to local: %s", e)
-        return {"llm": llm, "prompt": prompt, "plan": plan, "mode": "local_cryptographic"}
+        return {"llm": llm, "prompt": prompt, "plan": normalized_plan, "mode": "local_cryptographic"}
 
     def hash_plan_tool_calls(self, tool_name: str, args: Dict[str, Any]) -> str:
         """Computes SHA-256 hash using official SDK's hash_tool_calls when available."""
