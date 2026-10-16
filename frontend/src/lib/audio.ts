@@ -3,7 +3,9 @@
  * Provides low-latency audio playback with seamless Web Speech API browser fallback.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000/api";
+const API_BASE = typeof window !== "undefined"
+  ? (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "/api")
+  : (process.env.INTERNAL_API_URL || "http://127.0.0.1:8000/api");
 
 type AudioPlayListener = (isPlaying: boolean) => void;
 const listeners: Set<AudioPlayListener> = new Set();

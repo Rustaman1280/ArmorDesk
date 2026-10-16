@@ -78,10 +78,15 @@ class ArmorIQClient:
         # Valid ArmorIQ API keys start with ak_live_, ak_test_, or ak_claw_
         if any(self.api_key.startswith(p) for p in ("ak_live_", "ak_test_", "ak_claw_")):
             try:
-                self.sdk_client = OfficialArmorIQClient(
-                    api_key=self.api_key,
-                    timeout=5.0
-                )
+                backend_url = os.getenv("ARMORIQ_BACKEND_URL")
+                kwargs = {
+                    "api_key": self.api_key,
+                    "timeout": 5.0
+                }
+                if backend_url:
+                    kwargs["backend_endpoint"] = backend_url
+                    kwargs["use_production"] = ("staging" not in backend_url)
+                self.sdk_client = OfficialArmorIQClient(**kwargs)
                 logger.info("Initialized official armoriq-sdk client in live mode")
             except Exception as e:
                 logger.warning("Could not initialize official armoriq-sdk client: %s", e)

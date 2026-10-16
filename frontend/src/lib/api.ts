@@ -3,7 +3,9 @@
  * Connects Next.js UI to FastAPI backend on http://127.0.0.1:8000
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+const API_BASE = typeof window !== "undefined"
+  ? (process.env.NEXT_PUBLIC_API_URL || "/api")
+  : (process.env.INTERNAL_API_URL || "http://127.0.0.1:8000/api");
 
 export interface TenantInfo {
   id: string;

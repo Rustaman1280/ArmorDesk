@@ -3,6 +3,7 @@ ArmorDesk FastAPI Backend
 Entrypoint for Enterprise AI Agent Control Plane, Approval Inbox & Trust Center.
 """
 import json
+import os
 import uuid
 import hashlib
 from datetime import datetime, timezone
@@ -648,7 +649,7 @@ CONNECTED_AGENTS_FLEET = [
 
 @app.get("/api/mcp/config", response_model=MCPGatewayInfo)
 def get_mcp_config(tenant_id: str = Query("acme-corp")):
-    backend_base = "http://localhost:8000"
+    backend_base = os.getenv("BACKEND_PUBLIC_URL") or "https://armordesk.crusts.dev"
     claude_cfg = {
         "mcpServers": {
             "armordesk_gateway": {
