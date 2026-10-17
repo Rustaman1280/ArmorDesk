@@ -1,6 +1,6 @@
 {
   "name": "@crustdev/armordesk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Official TypeScript SDK and CLI for ArmorDesk: Enterprise AI Agent Control Plane, Governed MCP Gateway, and Cryptographic Trust Center.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

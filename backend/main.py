@@ -787,29 +787,39 @@ print(result)  # Automatically frozen in ArmorDesk Approval Inbox if > $50!'''
 
 @app.post("/api/mcp/ping")
 def ping_mcp_gateway(request: Request, tenant_id: Optional[str] = Query(None)):
-    tid = request.headers.get("X-ArmorIQ-Tenant") or tenant_id or "acme-corp"
+    auth_header = request.headers.get("Authorization") or ""
+    token = auth_header.replace("Bearer ", "").strip()
+    tid = request.headers.get("X-ArmorIQ-Tenant") or tenant_id
     user_agent = request.headers.get("User-Agent") or "Generic MCP Agent"
     
     try:
         conn = get_connection()
         cur = conn.cursor()
         now = datetime.now(timezone.utc).isoformat()
-        agent_id = f"cli-{tid}"
-        name = "ArmorDesk CLI Agent" if "@crustdev/armordesk" in user_agent or "node" in user_agent.lower() else (f"Agent ({user_agent[:24]})" if "curl" not in user_agent.lower() else "MCP cURL Client")
-        cur.execute("""
-            INSERT INTO connected_agents (
-                agent_id, tenant_id, name, transport, status, capabilities,
-                assigned_sandbox, enforced_policy, last_heartbeat, is_simulated, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
-            ON CONFLICT(agent_id) DO UPDATE SET
-                last_heartbeat = 'Active (just now)',
-                status = 'CONNECTED'
-        """, (
-            agent_id, tid, name, "MCP JSON-RPC 2.0 (HTTP/SSE)",
-            "CONNECTED", json.dumps(["mcp.ping", "mcp.inspect", "receipt.verify"]),
-            "client_workstation", "Local Account Scoped", "Active (just now)", now
-        ))
-        conn.commit()
+
+        if not tid and token:
+            cur.execute("SELECT tenant_id, user_name FROM device_authorizations WHERE token = ?", (token,))
+            d_row = cur.fetchone()
+            if d_row and d_row["tenant_id"]:
+                tid = d_row["tenant_id"]
+
+        if tid:
+            agent_id = f"cli-{tid}"
+            name = "ArmorDesk CLI Agent" if "@crustdev/armordesk" in user_agent or "node" in user_agent.lower() else (f"Agent ({user_agent[:24]})" if "curl" not in user_agent.lower() else f"MCP Client ({tid})")
+            cur.execute("""
+                INSERT INTO connected_agents (
+                    agent_id, tenant_id, name, transport, status, capabilities,
+                    assigned_sandbox, enforced_policy, last_heartbeat, is_simulated, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                ON CONFLICT(agent_id) DO UPDATE SET
+                    last_heartbeat = 'Active (just now)',
+                    status = 'CONNECTED'
+            """, (
+                agent_id, tid, name, "MCP JSON-RPC 2.0 (HTTP/SSE)",
+                "CONNECTED", json.dumps(["mcp.ping", "mcp.inspect", "receipt.verify"]),
+                "client_workstation", "Local Account Scoped", "Active (just now)", now
+            ))
+            conn.commit()
         conn.close()
     except Exception:
         pass
@@ -1406,6 +1416,31 @@ def authorize_device_code(req: DeviceAuthorizeRequest):
     """, (
         user_row["id"], user_row["email"], user_row["name"],
         user_row["role"], user_row["tenant_id"], token, code_clean
+    ))
+
+    # Auto-register this device immediately as an active connected agent for this tenant!
+    agent_id = f"cli-{user_row['tenant_id']}"
+    cur.execute("""
+        INSERT INTO connected_agents (
+            agent_id, tenant_id, name, transport, status, capabilities,
+            assigned_sandbox, enforced_policy, last_heartbeat, is_simulated, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+        ON CONFLICT(agent_id) DO UPDATE SET
+            last_heartbeat = 'Active (just now)',
+            status = 'CONNECTED',
+            name = excluded.name,
+            tenant_id = excluded.tenant_id
+    """, (
+        agent_id,
+        user_row["tenant_id"],
+        f"ArmorDesk CLI ({user_row['name']})",
+        "MCP JSON-RPC 2.0 (HTTP/SSE)",
+        "CONNECTED",
+        json.dumps(["mcp.ping", "mcp.inspect", "receipt.verify", "tools.call"]),
+        "client_workstation",
+        f"{user_row['role'].capitalize()} Scoped Policy",
+        "Active (just now)",
+        now.isoformat()
     ))
     conn.commit()
     conn.close()

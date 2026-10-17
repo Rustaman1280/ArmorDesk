@@ -84,6 +84,16 @@ try {
                     updatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
                 }
                 $cfgObj | ConvertTo-Json -Depth 5 | Set-Content -Path $cfgPath -Encoding UTF8
+
+                # Immediately ping MCP Gateway with authenticated credentials
+                try {
+                    $headers = @{
+                        "Authorization" = "Bearer $($pollRes.token)"
+                        "X-ArmorIQ-Tenant" = "$($pollRes.tenant.id)"
+                        "User-Agent" = "ArmorDesk-PowerShell-Installer"
+                    }
+                    Invoke-RestMethod -Uri "https://armordesk.crusts.dev/api/mcp/ping" -Method Post -Headers $headers -TimeoutSec 5 | Out-Null
+                } catch {}
                 break
             } elseif ($pollRes.status -eq "DENIED" -or $pollRes.status -eq "EXPIRED") {
                 Write-Host ""

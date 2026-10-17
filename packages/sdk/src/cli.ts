@@ -163,6 +163,12 @@ export async function runCLI(args: string[] = process.argv.slice(2)): Promise<vo
                 updatedAt: new Date().toISOString(),
               });
 
+              client.token = pollRes.token;
+              client.tenantId = pollRes.user.tenant_id;
+              try {
+                await client.getMCPStatus();
+              } catch {}
+
               console.log("\n------------------------------------------------------------");
               console.log(`✅ Authorization Approved by Browser!`);
               console.log(`   User:         ${pollRes.user.name} (${pollRes.user.email})`);

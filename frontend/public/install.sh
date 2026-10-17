@@ -94,6 +94,12 @@ if [ -n "$DEV_CODE" ] && [ -n "$USER_CODE" ]; then
 }
 EOF
       chmod 600 "$HOME/.armordesk/config.json" 2>/dev/null || true
+
+      # Immediately ping MCP Gateway with the authenticated credentials to establish the connection
+      curl -s -X POST https://armordesk.crusts.dev/api/mcp/ping \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "X-ArmorIQ-Tenant: $TENANT_ID" \
+        -H "User-Agent: ArmorDesk-CLI-Installer" >/dev/null 2>&1 || true
       break
     elif echo "$POLL_RES" | grep -q '"status":"DENIED"'; then
       echo ""

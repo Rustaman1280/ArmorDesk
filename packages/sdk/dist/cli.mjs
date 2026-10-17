@@ -151,6 +151,12 @@ async function runCLI(args = process.argv.slice(2)) {
                 apiKey: client.apiKey,
                 updatedAt: (/* @__PURE__ */ new Date()).toISOString()
               });
+              client.token = pollRes.token;
+              client.tenantId = pollRes.user.tenant_id;
+              try {
+                await client.getMCPStatus();
+              } catch {
+              }
               console.log("\n------------------------------------------------------------");
               console.log(`\u2705 Authorization Approved by Browser!`);
               console.log(`   User:         ${pollRes.user.name} (${pollRes.user.email})`);
