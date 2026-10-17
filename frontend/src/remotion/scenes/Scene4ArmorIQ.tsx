@@ -63,9 +63,6 @@ export function Scene4ArmorIQ() {
         className="absolute top-1/2 -left-40 w-[650px] h-[650px] rounded-full bg-cyan-200/35 filter blur-[140px] pointer-events-none"
       />
 
-      {/* Voiceover Audio */}
-      <Audio src={staticFile("/voiceover/scene4_armoriq.mp3")} />
-
       {/* Top Floating Scene Tag */}
       <div className="absolute top-8 left-12 z-30 flex items-center gap-3">
         <div className="px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-800 font-mono text-xs font-bold tracking-widest flex items-center gap-2 shadow-sm">

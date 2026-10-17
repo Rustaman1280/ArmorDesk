@@ -75,9 +75,6 @@ export function Scene1Problem() {
         className="absolute top-1/3 -right-40 w-[650px] h-[650px] rounded-full bg-amber-200/30 filter blur-[130px] pointer-events-none"
       />
 
-      {/* Voiceover Audio */}
-      <Audio src={staticFile("/voiceover/scene1_problem.mp3")} />
-
       {/* BEAT 1: GIANT KINETIC OPENING (FRAMES 0 - 300) */}
       {frame < 310 && (
         <div

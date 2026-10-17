@@ -81,9 +81,6 @@ export function Scene2Architecture() {
         className="absolute -bottom-40 -left-40 w-[650px] h-[650px] rounded-full bg-emerald-200/40 filter blur-[130px] pointer-events-none"
       />
 
-      {/* Voiceover Audio */}
-      <Audio src={staticFile("/voiceover/scene2_architecture.mp3")} />
-
       {/* BEAT 1: KINETIC HERO TITLE (FRAMES 0 - 280) */}
       {frame < 290 && (
         <div

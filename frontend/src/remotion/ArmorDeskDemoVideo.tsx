@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Sequence, useCurrentFrame, Audio, staticFile } from "remotion";
 import { Scene1Problem } from "./scenes/Scene1Problem";
 import { Scene2Architecture } from "./scenes/Scene2Architecture";
 import { Scene3Demo } from "./scenes/Scene3Demo";
@@ -23,6 +23,24 @@ export function ArmorDeskDemoVideo() {
 
   return (
     <AbsoluteFill className="bg-[#FAFAFC]">
+      {/* 5 Audio Voiceover Tracks (ElevenLabs v4 Expressive Adam) */}
+      <Sequence from={0} durationInFrames={1200} name="Audio 1: Problem">
+        <Audio src={staticFile("voiceover/scene1_problem.mp3")} />
+      </Sequence>
+      <Sequence from={1200} durationInFrames={1200} name="Audio 2: Architecture">
+        <Audio src={staticFile("voiceover/scene2_architecture.mp3")} />
+      </Sequence>
+      <Sequence from={2400} durationInFrames={1350} name="Audio 3: Live Demo">
+        <Audio src={staticFile("voiceover/scene3_demo.mp3")} />
+      </Sequence>
+      <Sequence from={3750} durationInFrames={1350} name="Audio 4: ArmorIQ">
+        <Audio src={staticFile("voiceover/scene4_armoriq.mp3")} />
+      </Sequence>
+      <Sequence from={5100} durationInFrames={1200} name="Audio 5: Takeaways">
+        <Audio src={staticFile("voiceover/scene5_takeaways.mp3")} />
+      </Sequence>
+
+      {/* Visual Scenes */}
       {/* 1. Scene 1: The Problem & Who It Is For (0 - 1200 frames / 40s) */}
       <Sequence from={0} durationInFrames={1200} name="Scene 1: Problem">
         <Scene1Problem />

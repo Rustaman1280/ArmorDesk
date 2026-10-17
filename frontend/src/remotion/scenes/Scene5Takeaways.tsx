@@ -69,9 +69,6 @@ export function Scene5Takeaways() {
         className="absolute top-1/2 -right-40 w-[650px] h-[650px] rounded-full bg-cyan-200/40 filter blur-[140px] pointer-events-none"
       />
 
-      {/* Voiceover Audio */}
-      <Audio src={staticFile("/voiceover/scene5_takeaways.mp3")} />
-
       {/* BEAT 1: KINETIC STATEMENT (FRAMES 0 - 300) */}
       {frame < 310 && (
         <div
