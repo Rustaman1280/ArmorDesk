@@ -15,7 +15,8 @@ export function middleware(request: NextRequest) {
   }
 
   // Public unauthenticated routes
-  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/register";
+  const isPublicRoute =
+    pathname === "/" || pathname === "/login" || pathname === "/register" || pathname === "/edit";
 
   // Force logout/switch account parameter bypass
   if (pathname === "/login" && (request.nextUrl.searchParams.has("switch") || request.nextUrl.searchParams.has("logout"))) {

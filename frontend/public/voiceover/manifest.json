@@ -1,0 +1,32 @@
+{
+  "scene1_problem": {
+    "file": "/voiceover/scene1_problem.mp3",
+    "durationSec": 29.396463,
+    "framesAt30Fps": 882,
+    "text": "Autonomous AI coding agents are increasingly given high-privilege access to corporate databases, cloud infra, and financial APIs. The problem? Indirect Prompt Injection. When an agent reads an unvetted invoice or email containing hidden instructions, it can be tricked into wiring funds or corrupting data. Who is this for? CISOs, enterprise security architects, and FinOps teams who need to govern autonomous agents without slowing down engineering innovation."
+  },
+  "scene2_architecture": {
+    "file": "/voiceover/scene2_architecture.mp3",
+    "durationSec": 24.938231,
+    "framesAt30Fps": 748,
+    "text": "Meet ArmorDesk: a governed Model Context Protocol gateway that acts as a zero-trust cryptographic firewall. Instead of relying on LLM self-discipline, ArmorDesk intercepts tool calls at the JSON-RPC wire level. With one command, developers authenticate through browser OAuth and automatically connect up to twelve local agents, including Antigravity, OpenCode, Codex, Hermes, Cursor, and Claude."
+  },
+  "scene3_demo": {
+    "file": "/voiceover/scene3_demo.mp3",
+    "durationSec": 25.170431,
+    "framesAt30Fps": 755,
+    "text": "Here is the product working end to end. A low-risk autonomous SLA refund of twenty dollars passes instantly under our policy threshold. Next, when an agent attempts an unauthorized eight thousand dollar wire transfer, ArmorDesk immediately freezes execution into Dual-Control Escrow. In the Approval Inbox, the transaction requires human cryptographic sign-off before funds leave the bank."
+  },
+  "scene4_armoriq": {
+    "file": "/voiceover/scene4_armoriq.mp3",
+    "durationSec": 24.659592,
+    "framesAt30Fps": 740,
+    "text": "Inside the ArmorIQ Console and Policy Studio at tools dot armoriq dot ai, we configure attestation rules that anchor agent intent. Our rules mandate vendor whitelist verification, enforce spend ceilings, and compute SHA-256 Plan Hashes. Every execution mints an immutable cryptographic receipt with a Merkle proof, verifiable offline by compliance auditors."
+  },
+  "scene5_takeaways": {
+    "file": "/voiceover/scene5_takeaways.mp3",
+    "durationSec": 26.517188,
+    "framesAt30Fps": 796,
+    "text": "Our key takeaway: agent security cannot rely on prompt engineering. True enterprise governance requires deterministic control at the protocol layer. Next, we are building distributed Hardware Security Module escrows on AWS Nitro Enclaves and multi-agent threshold voting. Inspect the open source SDK on npm, check our repository on GitHub, and explore the live gateway at armordesk dot crusts dot dev."
+  }
+}

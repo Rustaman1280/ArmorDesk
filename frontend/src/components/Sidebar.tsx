@@ -17,7 +17,8 @@ import {
   Radio,
   Plug,
   LogOut,
-  Building
+  Building,
+  Video
 } from "lucide-react";
 
 export function Sidebar() {
@@ -81,13 +82,20 @@ export function Sidebar() {
       ],
     },
     {
-      group: "EXECUTIVE",
+      group: "EXECUTIVE & DEMO",
       items: [
         {
           href: "/takeaways",
           label: "Takeaways & Vision",
           icon: Compass,
           badge: null,
+        },
+        {
+          href: "/edit",
+          label: "Video Demo Studio",
+          icon: Video,
+          badge: "REMOTION",
+          badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
         },
       ],
     },
