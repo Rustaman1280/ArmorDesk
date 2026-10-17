@@ -15,6 +15,7 @@ export function Scene3Demo() {
       style={{
         width: 1920,
         height: 1080,
+        backgroundColor: "#FAFAFC",
       }}
       className="bg-[#FAFAFC] text-slate-900 overflow-hidden select-none font-sans flex flex-col justify-center items-center"
     >

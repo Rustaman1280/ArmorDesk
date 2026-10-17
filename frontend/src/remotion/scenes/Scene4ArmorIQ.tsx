@@ -40,6 +40,7 @@ export function Scene4ArmorIQ() {
       style={{
         width: 1920,
         height: 1080,
+        backgroundColor: "#FAFAFC",
         transform: `scale(${cameraScale})`,
         transformOrigin: "center center",
       }}

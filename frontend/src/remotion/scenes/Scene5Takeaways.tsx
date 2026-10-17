@@ -43,6 +43,7 @@ export function Scene5Takeaways() {
       style={{
         width: 1920,
         height: 1080,
+        backgroundColor: "#FAFAFC",
         transform: `scale(${cameraScale})`,
         transformOrigin: "center center",
       }}

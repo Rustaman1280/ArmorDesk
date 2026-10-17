@@ -24,7 +24,10 @@ export function ArmorDeskDemoVideo() {
   else if (frame >= 1140) currentChapter = "02: ZERO-TRUST ARCHITECTURE";
 
   return (
-    <AbsoluteFill className="bg-[#FAFAFC] overflow-hidden">
+    <AbsoluteFill
+      style={{ backgroundColor: "#FAFAFC" }}
+      className="bg-[#FAFAFC] overflow-hidden"
+    >
       {/* ======================================================== */}
       {/* 1. AUDIO VOICEOVER TIMELINE (ElevenLabs v4 Adam)         */}
       {/* ======================================================== */}

@@ -264,17 +264,33 @@ export default function VideoEditorLiveProgressPage() {
           </div>
 
           {/* Export Full HD MP4 */}
-          <div className="rounded-3xl bg-slate-900 text-white p-6 space-y-3 shadow-xl">
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold tracking-wider">
-              <Download className="h-4 w-4" />
-              <span>EXPORT PRODUCTION VIDEO (.MP4)</span>
+          <div className="rounded-3xl bg-slate-900 text-white p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold tracking-wider">
+                <Download className="h-4 w-4" />
+                <span>EXPORT PRODUCTION VIDEO (.MP4)</span>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
+                1080p 30fps
+              </span>
             </div>
+
             <p className="text-xs text-slate-300 leading-relaxed font-sans">
-              Render with Remotion CLI and FFmpeg at 1080p 30fps:
+              Render with Remotion CLI and FFmpeg into public folder for instant web download:
             </p>
-            <pre className="p-3 rounded-xl bg-black text-emerald-300 font-mono text-[11px] overflow-x-auto border border-slate-800">
-              npx remotion render src/remotion/Root.tsx ArmorDeskDemo out/armordesk-demo.mp4
+
+            <pre className="p-3.5 rounded-xl bg-black text-emerald-300 font-mono text-[11px] overflow-x-auto border border-slate-800">
+              npx remotion render src/remotion/index.ts ArmorDeskDemo public/armordesk-demo.mp4
             </pre>
+
+            <a
+              href="/armordesk-demo.mp4"
+              download="armordesk-demo.mp4"
+              className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-mono text-xs font-extrabold flex items-center justify-center gap-2 transition-colors shadow-lg"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download Rendered armordesk-demo.mp4</span>
+            </a>
           </div>
         </div>
       </div>

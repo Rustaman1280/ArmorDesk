@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "next dev -p 3005",
     "build": "next build",
-    "start": "next start -p 3005"
+    "start": "next start -p 3005",
+    "video:render": "remotion render src/remotion/index.ts ArmorDeskDemo public/armordesk-demo.mp4"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.2",
     "@remotion/cli": "^4.0.536",
     "@remotion/player": "^4.0.536",
+    "@remotion/tailwind": "^4.0.536",
     "@remotion/three": "^4.0.536",
     "@types/canvas-confetti": "^1.9.0",
     "@types/three": "^0.186.0",
