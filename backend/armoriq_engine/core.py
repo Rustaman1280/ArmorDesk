@@ -33,14 +33,24 @@ try:
 except ImportError:
     sdk_canonical_json = None
 
+def _normalize_jcs(data: Any) -> Any:
+    if isinstance(data, dict):
+        return {k: _normalize_jcs(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [_normalize_jcs(v) for v in data]
+    if isinstance(data, float) and data.is_integer():
+        return int(data)
+    return data
+
 def canonical_json(data: Any) -> str:
     """Deterministic JSON serialization for cryptographic hashing (RFC 8785)."""
+    norm = _normalize_jcs(data)
     if sdk_canonical_json:
         try:
-            return sdk_canonical_json(data).decode('utf-8')
+            return sdk_canonical_json(norm).decode('utf-8')
         except Exception:
             pass
-    return json.dumps(data, sort_keys=True, separators=(',', ':'))
+    return json.dumps(norm, sort_keys=True, separators=(',', ':'))
 
 def hash_sha256(data: str) -> str:
     return hashlib.sha256(data.encode('utf-8')).hexdigest()
