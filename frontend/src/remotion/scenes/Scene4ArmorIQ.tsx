@@ -1,190 +1,198 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate, Audio, staticFile } from "remotion";
-import { ShieldAlert, FileText, CheckCircle2, XCircle, Sliders, Hash, Award, ExternalLink } from "lucide-react";
-import { CanvasPlaceholder } from "../components/CanvasPlaceholder";
+import { Sliders, CheckCircle2, XCircle, Award, ExternalLink, Hash, FileCheck } from "lucide-react";
+import { MotionCanvasSlot } from "../components/MotionCanvasSlot";
 
 export function Scene4ArmorIQ() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const titleSpring = spring({ frame, fps, config: { damping: 14 } });
-  const rulesSpring = spring({ frame: frame - 15, fps, config: { damping: 12 } });
-  const receiptSpring = spring({ frame: frame - 30, fps, config: { damping: 12 } });
+  const titleSpring1 = spring({ frame: frame - 5, fps, config: { damping: 11, mass: 0.7 } });
+  const titleSpring2 = spring({ frame: frame - 16, fps, config: { damping: 11, mass: 0.7 } });
+  const leftSpring = spring({ frame: frame - 28, fps, config: { damping: 12, mass: 0.8 } });
+
+  const orb1Y = Math.sin(frame * 0.035) * 22;
+  const orb2X = Math.cos(frame * 0.035) * 25;
 
   return (
-    <AbsoluteFill className="bg-[#07080B] text-white p-16 flex flex-col justify-between font-sans overflow-hidden">
-      {/* Background Cyber Grid Accent */}
+    <AbsoluteFill className="bg-[#FAFAFC] text-slate-900 p-16 flex flex-col justify-between font-sans overflow-hidden select-none">
+      {/* Background Soft Ambient Light Spheres (Apple/Linear Studio Style) */}
       <div
-        className="absolute inset-0 opacity-15 pointer-events-none"
-        style={{
-          backgroundImage:
-            "radial-gradient(#10b981 1px, transparent 1px), radial-gradient(#6366f1 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-          backgroundPosition: "0 0, 20px 20px",
-        }}
+        style={{ transform: `translateY(${orb1Y}px)` }}
+        className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-violet-200/40 filter blur-[95px] pointer-events-none"
+      />
+      <div
+        style={{ transform: `translateX(${orb2X}px)` }}
+        className="absolute top-1/2 -left-32 w-96 h-96 rounded-full bg-cyan-200/40 filter blur-[100px] pointer-events-none"
       />
 
       {/* Voiceover Audio */}
       <Audio src={staticFile("/voiceover/scene4_armoriq.mp3")} />
 
-      {/* Header Bar */}
-      <div
-        style={{
-          opacity: titleSpring,
-          transform: `translateY(${interpolate(titleSpring, [0, 1], [-20, 0])}px)`,
-        }}
-        className="relative z-10 flex items-center justify-between border-b border-white/10 pb-6"
-      >
+      {/* Top Meta Bar */}
+      <div className="relative z-10 flex items-center justify-between border-b border-slate-200/80 pb-6">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center border border-violet-500/40">
-            <Sliders className="h-5 w-5" />
+          <div className="px-3 py-1 rounded-full bg-violet-50 border border-violet-200/80 text-violet-700 font-mono text-xs font-bold tracking-widest flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-violet-500 animate-ping" />
+            <span>04 / POLICY STUDIO</span>
           </div>
-          <div>
-            <div className="text-[11px] font-mono font-bold tracking-widest text-violet-400 uppercase">
-              CHAPTER 04 : ARMORIQL CONSOLE &amp; POLICY RULES
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white font-mono">
-              tools.armoriq.ai &amp; Policy Studio
-            </h1>
-          </div>
+          <span className="text-xs font-mono text-slate-400">tools.armoriq.ai CONSOLE INTEGRATION</span>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30 text-xs font-mono text-violet-300">
-          <ExternalLink className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white shadow-sm border border-slate-200 text-xs font-mono text-slate-700 font-semibold">
+          <ExternalLink className="h-3.5 w-3.5 text-violet-500" />
           <span>CONSOLE: tools.armoriq.ai</span>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="relative z-10 grid grid-cols-12 gap-8 my-auto items-stretch">
-        {/* Left Column: Policy Studio Rules Configured (Span 7) */}
+      {/* Giant Kinetic Hero Typography (Apple Keynote Style) */}
+      <div className="relative z-10 my-2 space-y-1">
         <div
           style={{
-            opacity: rulesSpring,
-            transform: `translateY(${interpolate(rulesSpring, [0, 1], [30, 0])}px)`,
+            opacity: titleSpring1,
+            transform: `translateY(${interpolate(titleSpring1, [0, 1], [30, 0])}px) scale(${interpolate(titleSpring1, [0, 1], [0.96, 1])})`,
+          }}
+          className="text-5xl font-black tracking-tight text-slate-900 font-mono uppercase"
+        >
+          ArmorIQ Policy Studio
+        </div>
+        <div
+          style={{
+            opacity: titleSpring2,
+            transform: `translateY(${interpolate(titleSpring2, [0, 1], [30, 0])}px) scale(${interpolate(titleSpring2, [0, 1], [0.96, 1])})`,
+          }}
+          className="text-5xl font-black tracking-tight text-violet-600 font-mono uppercase flex items-center gap-4"
+        >
+          <span>Deterministic Governance Rules.</span>
+          <span className="text-sm font-sans font-normal text-slate-500 normal-case px-4 py-1.5 rounded-full bg-white shadow-sm border border-slate-200">
+            Rules configured at tools.armoriq.ai to enforce intent bounds
+          </span>
+        </div>
+      </div>
+
+      {/* Main Kinetic Content Row: Rules Matrix vs Motion Canvas Slot */}
+      <div className="relative z-10 grid grid-cols-12 gap-8 items-center my-auto">
+        {/* Left Column: 3 Core Policy Rules & Certificate (Span 7) */}
+        <div
+          style={{
+            opacity: leftSpring,
+            transform: `translateY(${interpolate(leftSpring, [0, 1], [40, 0])}px)`,
           }}
           className="col-span-7 space-y-4"
         >
-          <div className="rounded-2xl border border-white/10 bg-[#0E0F14]/90 p-5 space-y-3 shadow-xl">
-            <div className="flex items-center justify-between pb-2 border-b border-white/10">
-              <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                Configured Policy Rules in ArmorTools
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">
-                POLICY STUDIO ENGINE
+          {/* Rules Card */}
+          <div className="rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-5 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Sliders className="h-4 w-4 text-slate-700" />
+                <span className="text-xs font-mono font-bold text-slate-900 tracking-wider">
+                  ACTIVE GOVERNANCE RULES
+                </span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 text-[10px] font-mono font-bold border border-violet-200">
+                tools.armoriq.ai
               </span>
             </div>
 
             <div className="space-y-2.5">
               {/* Rule 1: Spend Limit */}
-              <div className="p-3 rounded-xl bg-slate-900/70 border border-white/5 space-y-1.5">
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-200">
+                  <span className="text-xs font-mono font-bold text-slate-900">
                     Rule 1: spend_limit_ceiling ($50.00 USD)
                   </span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                     ESCROW GATE
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                  <div className="flex items-center gap-1.5 text-emerald-400">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                    <span>Allowed: Micro-refunds &lt;= $50</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-red-400">
-                    <XCircle className="h-3.5 w-3.5 shrink-0" />
-                    <span>Blocked: Unsupervised wire &gt; $50</span>
-                  </div>
+                  <span className="text-emerald-600 flex items-center gap-1 font-semibold">
+                    <CheckCircle2 className="h-3 w-3 shrink-0" />
+                    Allowed: Micro-refunds &lt;= $50
+                  </span>
+                  <span className="text-rose-600 flex items-center gap-1 font-semibold">
+                    <XCircle className="h-3 w-3 shrink-0" />
+                    Blocked: Unvetted wire &gt; $50
+                  </span>
                 </div>
               </div>
 
-              {/* Rule 2: Allowed Vendor Whitelist */}
-              <div className="p-3 rounded-xl bg-slate-900/70 border border-white/5 space-y-1.5">
+              {/* Rule 2: Whitelist CRM */}
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-200">
+                  <span className="text-xs font-mono font-bold text-slate-900">
                     Rule 2: vendor_crm_whitelist
                   </span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold">
-                    BENEFICIARY CHECK
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold">
+                    BENEFICIARY
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                  <div className="flex items-center gap-1.5 text-emerald-400">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                    <span>Allowed: Verified vendor accounts</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-red-400">
-                    <XCircle className="h-3.5 w-3.5 shrink-0" />
-                    <span>Blocked: Unvetted routing numbers</span>
-                  </div>
+                  <span className="text-emerald-600 flex items-center gap-1 font-semibold">
+                    <CheckCircle2 className="h-3 w-3 shrink-0" />
+                    Allowed: Whitelisted accounts
+                  </span>
+                  <span className="text-rose-600 flex items-center gap-1 font-semibold">
+                    <XCircle className="h-3 w-3 shrink-0" />
+                    Blocked: Rogue transit routing
+                  </span>
                 </div>
               </div>
 
-              {/* Rule 3: Cryptographic Intent Anchoring */}
-              <div className="p-3 rounded-xl bg-slate-900/70 border border-white/5 space-y-1.5">
+              {/* Rule 3: Intent Anchoring */}
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-200">
+                  <span className="text-xs font-mono font-bold text-slate-900">
                     Rule 3: plan_hash_attestation
                   </span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400 font-bold">
-                    RFC 8785 CANONICAL
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 font-bold">
+                    RFC 8785 HASH
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                  <div className="flex items-center gap-1.5 text-emerald-400">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                    <span>SHA-256 Plan Hash matching allowed spec</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-red-400">
-                    <XCircle className="h-3.5 w-3.5 shrink-0" />
-                    <span>Intercepts runtime parameter tampering</span>
-                  </div>
+                  <span className="text-emerald-600 flex items-center gap-1 font-semibold">
+                    <CheckCircle2 className="h-3 w-3 shrink-0" />
+                    SHA-256 Plan Hash matching spec
+                  </span>
+                  <span className="text-rose-600 flex items-center gap-1 font-semibold">
+                    <XCircle className="h-3 w-3 shrink-0" />
+                    Blocks parameter tampering
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Certificate Output Snippet */}
-          <div
-            style={{
-              opacity: receiptSpring,
-            }}
-            className="p-3.5 rounded-2xl bg-[#090C12] border border-violet-500/30 text-[10px] font-mono text-slate-300 space-y-1 shadow-lg"
-          >
-            <div className="flex items-center justify-between text-violet-300 font-bold pb-1 border-b border-white/10">
-              <span className="flex items-center gap-1.5">
-                <Award className="h-3.5 w-3.5" />
-                <span>Verifiable Receipt Certificate (Offline Proof)</span>
-              </span>
-              <span>rcpt_5b521f1f</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
+          {/* Cryptographic Certificate Card */}
+          <div className="p-4 rounded-3xl bg-slate-900 text-white shadow-xl flex items-center justify-between font-mono text-xs border border-slate-800">
+            <div className="flex items-center gap-3">
+              <Award className="h-5 w-5 text-emerald-400" />
               <div>
-                <span className="text-slate-500 block">PLAN HASH:</span>
-                <span className="text-emerald-400 truncate block">7f9b8a1c3d2e...4c1e</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block">MERKLE ROOT:</span>
-                <span className="text-cyan-400 truncate block">d4e5f6a7b8c9...9a8b</span>
+                <span className="text-slate-400 text-[10px] block">IMMUTABLE CERTIFICATE</span>
+                <span className="text-emerald-300 font-bold">Receipt rcpt_5b521f1f (Merkle Verified)</span>
               </div>
             </div>
+            <span className="text-[10px] px-3 py-1 rounded-full bg-slate-800 text-cyan-300 border border-white/10">
+              OFFLINE AUDIT PROOF
+            </span>
           </div>
         </div>
 
-        {/* Right Column: Canvas Slot 3 for Live tools.armoriq.ai Screen Recording (Span 5) */}
-        <div className="col-span-5 flex flex-col justify-between">
-          <CanvasPlaceholder
+        {/* Right Column: Motion Canvas Recording Slot (Span 5) */}
+        <div className="col-span-5">
+          <MotionCanvasSlot
             slotId="slot_03_armoriq_console"
-            title="Screen Recording: tools.armoriq.ai Console"
-            recommendedDuration="20 - 25s"
-            instructions="Drop a screen recording of your actual ArmorIQ Console showing the Policy Studio interface and active attestation rules."
-            className="h-full min-h-[380px]"
+            title="tools.armoriq.ai Policy Studio"
+            subtitle="Live screen recording showing the actual ArmorIQ Console interface and configured rule definitions."
+            badge="RECORDING CANVAS"
+            accentColor="violet"
+            className="h-[310px]"
           />
         </div>
       </div>
 
-      {/* Footer Info */}
-      <div className="relative z-10 flex items-center justify-between text-xs font-mono text-slate-500 pt-4 border-t border-white/10">
+      {/* Bottom Floating Bar */}
+      <div className="relative z-10 flex items-center justify-between text-xs font-mono text-slate-500 pt-4 border-t border-slate-200/80">
         <span>ArmorIQ SDK Pro Integration : Staging &amp; Production API</span>
         <span>Independent Offline Cryptographic Receipt Verification</span>
         <span>https://tools.armoriq.ai</span>

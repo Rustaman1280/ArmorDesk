@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 import { Scene1Problem } from "./scenes/Scene1Problem";
 import { Scene2Architecture } from "./scenes/Scene2Architecture";
 import { Scene3Demo } from "./scenes/Scene3Demo";
@@ -10,7 +10,6 @@ export const TOTAL_DURATION_FRAMES = 6300; // 210s = 3m30s at 30fps
 
 export function ArmorDeskDemoVideo() {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
 
   // Progress across the entire 6300-frame video
   const progressPercent = Math.min(100, Math.max(0, (frame / TOTAL_DURATION_FRAMES) * 100));
@@ -23,7 +22,7 @@ export function ArmorDeskDemoVideo() {
   else if (frame >= 1200) currentChapter = "02: ARCHITECTURE";
 
   return (
-    <AbsoluteFill className="bg-[#07080B]">
+    <AbsoluteFill className="bg-[#FAFAFC]">
       {/* 1. Scene 1: The Problem & Who It Is For (0 - 1200 frames / 40s) */}
       <Sequence from={0} durationInFrames={1200} name="Scene 1: Problem">
         <Scene1Problem />
@@ -50,17 +49,17 @@ export function ArmorDeskDemoVideo() {
       </Sequence>
 
       {/* Global Minimalist Progress Bar Overlay at Bottom Edge */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-50">
+      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-200/80 z-50">
         <div
-          className="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-violet-500 transition-all"
+          className="h-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-violet-500 transition-all"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
 
       {/* Global Top-Right Watermark / Chapter Indicator */}
-      <div className="absolute top-6 right-8 z-50 flex items-center gap-2 pointer-events-none opacity-80">
-        <div className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-300 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      <div className="absolute top-6 right-8 z-50 flex items-center gap-2 pointer-events-none">
+        <div className="px-3.5 py-1 rounded-full bg-white/90 shadow-sm backdrop-blur-md border border-slate-200 text-xs font-mono text-slate-700 font-bold flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>{currentChapter}</span>
         </div>
       </div>
