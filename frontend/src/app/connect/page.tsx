@@ -321,13 +321,20 @@ export default function ConnectGatewayPage() {
           <pre className="p-4 overflow-x-auto text-emerald-400 leading-relaxed text-[11px]">
             {activeTab === "bash" && (
 `# 1. Run the official automated installer for Linux & macOS:
+#    (Auto-detects OpenCode, Hermes, OpenClaw, Claude, Cursor)
 curl -fsSL https://armordesk.crusts.dev/install.sh | bash
 
 # 2. Or authenticate with your corporate tenant:
 npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.dev"}
 
 # 3. Probe and verify your Governed MCP Gateway:
-npx @crustdev/armordesk mcp check`
+npx @crustdev/armordesk mcp check
+
+# 4. Auto-connect detected agents after login:
+npx @crustdev/armordesk mcp inject all
+
+# 5. Get the AI System Prompt to paste in your LLM:
+npx @crustdev/armordesk mcp prompt`
             )}
             {activeTab === "powershell" && (
 `# 1. Run the official automated installer for Windows PowerShell:
@@ -347,7 +354,25 @@ npm install @crustdev/armordesk
 npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.dev"}
 npx @crustdev/armordesk mcp check
 npx @crustdev/armordesk whoami
-npx @crustdev/armordesk traces
+
+# Detect installed AI agents on your machine:
+npx @crustdev/armordesk mcp detect
+
+# Auto-inject ArmorDesk MCP into all detected agents:
+npx @crustdev/armordesk mcp inject all
+
+# Or inject into a specific agent:
+npx @crustdev/armordesk mcp inject opencode
+npx @crustdev/armordesk mcp inject hermes
+npx @crustdev/armordesk mcp inject openclaw
+npx @crustdev/armordesk mcp inject claude
+npx @crustdev/armordesk mcp inject cursor
+npx @crustdev/armordesk mcp inject windsurf
+
+# Get the AI System Prompt for manual configuration:
+npx @crustdev/armordesk mcp prompt
+
+# Run governance scenarios:
 npx @crustdev/armordesk scenario 1`
             )}
             {activeTab === "claude" && (mcpConfig?.sample_configs.claude_desktop || "Loading config...")}

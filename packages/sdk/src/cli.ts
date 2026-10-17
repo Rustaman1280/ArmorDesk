@@ -2,6 +2,7 @@ import { exec } from "node:child_process";
 import { ArmorDeskClient } from "./client.js";
 import { generateClaudeDesktopConfig, generateCursorConfig } from "./mcp.js";
 import { loadStoredConfig, saveStoredConfig, clearStoredConfig, getConfigPath } from "./config.js";
+import { detectInstalledAgents, injectAgentMCP, generateGovernedSystemPrompt } from "./agents.js";
 
 function tryOpenBrowser(url: string) {
   try {
@@ -28,8 +29,11 @@ const HELP_TEXT = `
     whoami                      Display active authenticated account & role
     logout                      Clear local session credentials
 
-  MCP Gateway & Diagnostics:
+  MCP Gateway & AI Agent Auto-Connect:
     mcp [check|status]          Verify if MCP Gateway is connected & reachable
+    mcp detect                  Scan system for installed AI coding agents (OpenCode, Hermes, Claude, Cursor)
+    mcp inject [agent|all]      Auto-configure ArmorDesk MCP into detected or specified agent
+    mcp prompt                  Display ready-to-copy AI System Prompt for any agent or LLM
     mcp claude                  Output Claude Desktop MCP configuration JSON
     mcp cursor                  Output Cursor IDE MCP configuration JSON
 
@@ -175,7 +179,38 @@ export async function runCLI(args: string[] = process.argv.slice(2)): Promise<vo
               console.log(`   Role:         ${pollRes.user.role.toUpperCase()}`);
               console.log(`   Tenant:       ${pollRes.tenant?.name || pollRes.user.tenant_id}`);
               console.log(`\n📁 Session saved to: ${getConfigPath()}`);
-              console.log("All armordesk commands will now execute under this identity.\n");
+              console.log("All armordesk commands will now execute under this identity.");
+
+              console.log("\n🤖 Scanning for Installed AI Agents (OpenCode, Hermes, Claude, Cursor, Windsurf)...");
+              const detected = detectInstalledAgents();
+              const installed = detected.filter((d) => d.isInstalled);
+              if (installed.length > 0) {
+                console.log(`Found ${installed.length} installed agent(s). Auto-connecting to ArmorDesk MCP:`);
+                for (const ag of installed) {
+                  const inj = injectAgentMCP(ag.id, {
+                    tenantId: pollRes.user.tenant_id,
+                    token: pollRes.token,
+                    baseUrl: client.baseUrl,
+                  });
+                  if (inj.success) {
+                    console.log(`  ✅ [${ag.name}] Configured (${inj.configPath})`);
+                  }
+                }
+              } else {
+                console.log("  No local agents detected yet. You can auto-connect anytime with:");
+                console.log("  npx @crustdev/armordesk mcp inject <opencode|hermes|claude|cursor|windsurf>");
+              }
+
+              console.log("\n📋 Governed AI Agent System Directive (Prompt for your LLMs):");
+              console.log("------------------------------------------------------------");
+              console.log(generateGovernedSystemPrompt({
+                tenantId: pollRes.user.tenant_id,
+                userName: pollRes.user.name,
+                userRole: pollRes.user.role,
+                baseUrl: client.baseUrl,
+              }));
+              console.log("------------------------------------------------------------");
+              console.log("Tip: Paste this prompt into your agent system instructions or Claude project prompt.\n");
               break;
             } else if (pollRes.status === "DENIED") {
               console.error("\n❌ Authorization request was declined in browser.");
@@ -382,6 +417,64 @@ export async function runCLI(args: string[] = process.argv.slice(2)): Promise<vo
           console.log(JSON.stringify(generateClaudeDesktopConfig({ gatewayUrl: `${client.baseUrl}/api/mcp/gateway` }), null, 2));
         } else if (sub === "cursor") {
           console.log(JSON.stringify(generateCursorConfig({ gatewayUrl: `${client.baseUrl}/api/mcp/gateway` }), null, 2));
+        } else if (sub === "prompt") {
+          const cfg = loadStoredConfig();
+          const promptText = generateGovernedSystemPrompt({
+            tenantId: (flags["tenant"] as string) || cfg.tenant?.id || client.tenantId,
+            userName: cfg.user?.name || client.userName,
+            userRole: cfg.user?.role || client.userRole,
+            baseUrl: client.baseUrl,
+          });
+          console.log("\n" + promptText + "\n");
+        } else if (sub === "detect") {
+          const agents = detectInstalledAgents();
+          if (flags["json"]) {
+            console.log(JSON.stringify(agents, null, 2));
+          } else {
+            console.log("\n🤖 Detected AI Coding & Desktop Agents");
+            console.log("------------------------------------------------------------");
+            agents.forEach((ag) => {
+              const statusBadge = ag.isConfigured
+                ? "🟢 CONFIGURED"
+                : ag.isInstalled
+                ? "🟡 INSTALLED (READY TO INJECT)"
+                : "⚪ NOT DETECTED";
+              console.log(`  • ${ag.name.padEnd(20)} [${statusBadge}]`);
+              console.log(`    Path: ${ag.configPath}`);
+            });
+            console.log("\nTip: Run 'armordesk mcp inject all' or 'armordesk mcp inject <name>' to connect them automatically.\n");
+          }
+        } else if (sub === "inject") {
+          const target = positional[2] || "all";
+          const cfg = loadStoredConfig();
+          const tenantId = (flags["tenant"] as string) || cfg.tenant?.id || client.tenantId;
+          const token = (flags["key"] as string) || cfg.token || client.apiKey;
+
+          console.log(`\n💉 Injecting ArmorDesk Governed MCP into target: ${target.toUpperCase()}...`);
+          console.log(`   Tenant: ${tenantId} | Endpoint: ${client.baseUrl}/api/mcp/gateway\n`);
+
+          const agents = detectInstalledAgents();
+          const targetsToInject = target === "all" ? agents.filter((a) => a.isInstalled).map((a) => a.id) : [target];
+
+          if (targetsToInject.length === 0) {
+            console.log("⚠️ No installed agents detected to inject automatically.");
+            console.log("You can force injection by specifying: armordesk mcp inject <opencode|hermes|claude|cursor|windsurf>");
+          } else {
+            for (const t of targetsToInject) {
+              const res = injectAgentMCP(t, {
+                tenantId,
+                token,
+                baseUrl: client.baseUrl,
+              });
+              if (res.success) {
+                console.log(`  ✅ [${t.toUpperCase()}] ${res.message}`);
+                console.log(`     Config: ${res.configPath}`);
+              } else {
+                console.log(`  ❌ [${t.toUpperCase()}] ${res.message}`);
+              }
+            }
+          }
+          console.log("\nTip: Run 'armordesk mcp prompt' to get the companion system directive for your agent prompt.\n");
         } else {
           console.log(`\n🔍 Probing ArmorDesk Governed MCP Gateway at ${client.baseUrl}...`);
           const diag = await client.checkMCP();
