@@ -4,7 +4,7 @@ import { AppProvider } from "@/context/AppContext";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata = {
-  title: "ArmorDesk — Enterprise AI Agent Control Plane & Trust Center",
+  title: "ArmorDesk: Enterprise AI Agent Control Plane & Trust Center",
   description: "Cryptographic Intent Governance, Human-in-the-Loop Approval Inbox, and Break-the-Agent Gauntlet for Autonomous AI Agents.",
 };
 

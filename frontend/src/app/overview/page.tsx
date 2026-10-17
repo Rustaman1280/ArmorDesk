@@ -135,8 +135,11 @@ export default function DashboardPage() {
                 JSON-RPC 2.0
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
-              Endpoint: <code className="font-mono text-slate-700 dark:text-zinc-300">http://localhost:8000/api/mcp/gateway</code> · 4 FinOps agents sandboxed and policed.
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+              <span>Endpoint:</span>
+              <code className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">https://armordesk.crusts.dev/api/mcp/gateway</code>
+              <span>· Quick installer:</span>
+              <code className="font-mono text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">curl -fsSL https://armordesk.crusts.dev/install.sh | bash</code>
             </p>
           </div>
         </div>

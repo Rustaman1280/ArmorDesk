@@ -31,7 +31,7 @@ export default function ConnectGatewayPage() {
   const { tenantId, currentUser, currentTenant, triggerReload, addToast } = useApp();
 
   const [mcpConfig, setMcpConfig] = useState<MCPGatewayConfig | null>(null);
-  const [activeTab, setActiveTab] = useState<"claude" | "cursor" | "python" | "curl">("claude");
+  const [activeTab, setActiveTab] = useState<"bash" | "powershell" | "cli" | "claude" | "cursor" | "python" | "curl">("bash");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState<boolean>(false);
 
@@ -166,7 +166,7 @@ export default function ConnectGatewayPage() {
             <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <div>
               <span className="font-bold">Gateway Connection Verified: </span>
-              <span>{pingResult.protocol} — Roundtrip latency {pingResult.latency_ms}ms · Sandboxes: {pingResult.active_sandboxes?.join(", ")}</span>
+              <span>{pingResult.protocol} · Roundtrip latency {pingResult.latency_ms}ms · Sandboxes: {pingResult.active_sandboxes?.join(", ")}</span>
             </div>
           </div>
           <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded font-bold">100% HEALTHY</span>
@@ -254,17 +254,20 @@ export default function ConnectGatewayPage() {
           </div>
 
           {/* Config Tabs */}
-          <div className="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-[#141519] border border-slate-200 dark:border-white/[0.06] text-xs font-mono">
+          <div className="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-[#141519] border border-slate-200 dark:border-white/[0.06] text-xs font-mono overflow-x-auto max-w-full">
             {[
+              { id: "bash", label: "Bash (sh)" },
+              { id: "powershell", label: "PowerShell (ps1)" },
+              { id: "cli", label: "NPM / CLI" },
               { id: "claude", label: "Claude Desktop" },
               { id: "cursor", label: "Cursor IDE" },
-              { id: "python", label: "Python / CrewAI" },
+              { id: "python", label: "Python SDK" },
               { id: "curl", label: "cURL JSON-RPC" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3 py-1.5 rounded font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded font-semibold transition-all shrink-0 ${
                   activeTab === tab.id
                     ? "bg-white text-slate-900 shadow-sm dark:bg-[#1F2028] dark:text-white"
                     : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
@@ -280,6 +283,9 @@ export default function ConnectGatewayPage() {
         <div className="relative rounded-xl bg-slate-900 text-slate-200 font-mono text-xs overflow-hidden border border-slate-800">
           <div className="flex items-center justify-between px-4 py-2.5 bg-slate-950/80 border-b border-slate-800 text-[11px] text-slate-400">
             <span>
+              {activeTab === "bash" && "curl -fsSL https://armordesk.crusts.dev/install.sh | bash"}
+              {activeTab === "powershell" && "iwr -useb https://armordesk.crusts.dev/install.ps1 | iex"}
+              {activeTab === "cli" && "npx @crustdev/armordesk"}
               {activeTab === "claude" && "claude_desktop_config.json"}
               {activeTab === "cursor" && ".cursor/mcp.json"}
               {activeTab === "python" && "finops_agent.py (LangChain / CrewAI / Custom)"}
@@ -288,14 +294,14 @@ export default function ConnectGatewayPage() {
 
             <button
               onClick={() => {
-                const text =
-                  activeTab === "claude"
-                    ? mcpConfig?.sample_configs.claude_desktop || ""
-                    : activeTab === "cursor"
-                    ? mcpConfig?.sample_configs.cursor || ""
-                    : activeTab === "python"
-                    ? mcpConfig?.sample_configs.python_sdk || ""
-                    : mcpConfig?.sample_configs.curl || "";
+                let text = "";
+                if (activeTab === "bash") text = "curl -fsSL https://armordesk.crusts.dev/install.sh | bash";
+                else if (activeTab === "powershell") text = "iwr -useb https://armordesk.crusts.dev/install.ps1 | iex";
+                else if (activeTab === "cli") text = `npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.dev"}\nnpx @crustdev/armordesk mcp check`;
+                else if (activeTab === "claude") text = mcpConfig?.sample_configs.claude_desktop || "";
+                else if (activeTab === "cursor") text = mcpConfig?.sample_configs.cursor || "";
+                else if (activeTab === "python") text = mcpConfig?.sample_configs.python_sdk || "";
+                else if (activeTab === "curl") text = mcpConfig?.sample_configs.curl || "";
                 handleCopy(text, `${activeTab.toUpperCase()} Config`);
               }}
               className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors"
@@ -306,6 +312,37 @@ export default function ConnectGatewayPage() {
           </div>
 
           <pre className="p-4 overflow-x-auto text-emerald-400 leading-relaxed text-[11px]">
+            {activeTab === "bash" && (
+`# 1. Run the official automated installer for Linux & macOS:
+curl -fsSL https://armordesk.crusts.dev/install.sh | bash
+
+# 2. Or authenticate with your corporate tenant:
+npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.dev"}
+
+# 3. Probe and verify your Governed MCP Gateway:
+npx @crustdev/armordesk mcp check`
+            )}
+            {activeTab === "powershell" && (
+`# 1. Run the official automated installer for Windows PowerShell:
+iwr -useb https://armordesk.crusts.dev/install.ps1 | iex
+
+# 2. Authenticate CLI with your account:
+npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.dev"}
+
+# 3. Check live MCP connection:
+npx @crustdev/armordesk mcp check`
+            )}
+            {activeTab === "cli" && (
+`# Install SDK in your agent project:
+npm install @crustdev/armordesk
+
+# Or run commands instantly with npx:
+npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.dev"}
+npx @crustdev/armordesk mcp check
+npx @crustdev/armordesk whoami
+npx @crustdev/armordesk traces
+npx @crustdev/armordesk scenario 1`
+            )}
             {activeTab === "claude" && (mcpConfig?.sample_configs.claude_desktop || "Loading config...")}
             {activeTab === "cursor" && (mcpConfig?.sample_configs.cursor || "Loading config...")}
             {activeTab === "python" && (mcpConfig?.sample_configs.python_sdk || "Loading config...")}

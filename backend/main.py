@@ -7,6 +7,7 @@ import os
 import uuid
 import hashlib
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 
@@ -70,6 +71,20 @@ def safe_json_loads(val: Any) -> Dict[str, Any]:
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/install.sh")
+def get_install_sh():
+    sh_path = Path(__file__).parent.parent / "frontend" / "public" / "install.sh"
+    if sh_path.exists():
+        return Response(content=sh_path.read_text(), media_type="text/x-shellscript")
+    return Response(content="#!/usr/bin/env bash\nnpx @crustdev/armordesk status\n", media_type="text/x-shellscript")
+
+@app.get("/install.ps1")
+def get_install_ps1():
+    ps1_path = Path(__file__).parent.parent / "frontend" / "public" / "install.ps1"
+    if ps1_path.exists():
+        return Response(content=ps1_path.read_text(), media_type="text/plain")
+    return Response(content="# ArmorDesk installer\nnpx @crustdev/armordesk status\n", media_type="text/plain")
 
 @app.get("/api/status")
 def get_system_status():

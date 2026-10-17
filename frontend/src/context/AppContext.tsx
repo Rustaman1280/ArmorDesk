@@ -13,6 +13,7 @@ import {
 
 export interface UserProfile {
   name: string;
+  email?: string;
   role: "manager" | "intern";
   title: string;
   avatar: string;

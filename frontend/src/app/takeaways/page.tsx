@@ -172,7 +172,7 @@ export default function TakeawaysPage() {
               Ecosystem Roadmap: From Hackathon to Industry Standard
             </h2>
           </div>
-          <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">Q4 2026 – Q2 2027</span>
+          <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">Q4 2026 to Q2 2027</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

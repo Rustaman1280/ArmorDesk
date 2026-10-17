@@ -33,7 +33,9 @@ import {
   Fingerprint,
   FileCheck,
   Sun,
-  Moon
+  Moon,
+  Plug,
+  Copy
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useApp } from "@/context/AppContext";
@@ -67,8 +69,8 @@ const SCENARIOS: Scenario[] = [
       { step: "03", status: "blocked", text: "Tool: bank.wire_transfer BLOCKED [policy_forbid: vendor_not_allowlisted]" },
       { step: "04", status: "held", text: "Intent drift detected: Wire call violates declared Plan. Escalated to Approval Inbox." },
     ],
-    attackOutcome: "CRITICAL BREACH — $9,000 STOLEN & CRM CONTACTS LEAKED",
-    governedOutcome: "ATTACK NEUTRALIZED — 0 DOLLARS LOST, PROTOCOL SCOPE ENFORCED",
+    attackOutcome: "CRITICAL BREACH: $9,000 STOLEN & CRM CONTACTS LEAKED",
+    governedOutcome: "ATTACK NEUTRALIZED: 0 DOLLARS LOST, PROTOCOL SCOPE ENFORCED",
   },
   {
     id: "micro-refund",
@@ -85,8 +87,8 @@ const SCENARIOS: Scenario[] = [
       { step: "02", status: "success", text: "Intent Token minted: scoped to bank.issue_refund, max_amount=50" },
       { step: "03", status: "success", text: "Tool: bank.issue_refund(amount=20) -> ALLOWED (Signed Receipt issued: #RCP-2091)" },
     ],
-    attackOutcome: "UNAUDITED DRIFT — Executed with zero cryptographic audit trail",
-    governedOutcome: "AUTONOMOUS ALLOWED — Completed in 140ms with immutable Merkle receipt",
+    attackOutcome: "UNAUDITED DRIFT: Executed with zero cryptographic audit trail",
+    governedOutcome: "AUTONOMOUS ALLOWED: Completed in 140ms with immutable Merkle receipt",
   },
   {
     id: "high-value",
@@ -102,8 +104,8 @@ const SCENARIOS: Scenario[] = [
       { step: "02", status: "held", text: "Amount $8,000 exceeds autonomous policy threshold ($100). await_approval() invoked." },
       { step: "03", status: "held", text: "Delegation Token #DEL-8820 held in CFO Approval Inbox pending cryptographic signature." },
     ],
-    attackOutcome: "UNGOVERNED SPEND — $8,000 sent without human dual-control verification",
-    governedOutcome: "HELD FOR DUAL-CONTROL — Routed to Approval Inbox with Slack alert & SHA-256 seal",
+    attackOutcome: "UNGOVERNED SPEND: $8,000 sent without human dual-control verification",
+    governedOutcome: "HELD FOR DUAL-CONTROL: Routed to Approval Inbox with Slack alert & SHA-256 seal",
   },
 ];
 
@@ -115,6 +117,14 @@ export default function LandingPage() {
   const [ticketApproved, setTicketApproved] = useState<boolean>(false);
   const [selectedRole, setSelectedRole] = useState<"intern" | "cfo">("intern");
   const [activeFaq, setActiveFaq] = useState<number>(0);
+  const [quickstartTab, setQuickstartTab] = useState<"bash" | "powershell" | "npm" | "curl" | "mcp">("bash");
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+
+  const handleCopySnippet = (code: string, label: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedSnippet(label);
+    setTimeout(() => setCopiedSnippet(null), 2000);
+  };
 
   // Live hash animation
   const [liveHash, setLiveHash] = useState<string>("0488e3ec2a214a3d605dc18cc7284e4f66363222ce953bb8f7ffcef51a0b1600");
@@ -610,7 +620,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">4. Verifiable Receipts</h3>
               <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Every action emits an immutable Merkle receipt with tool inputs, caller identity, and policy version—ready for SOC 2 Type II and ISO 27001 auditors.
+                Every action emits an immutable Merkle receipt with tool inputs, caller identity, and policy version, ready for SOC 2 Type II and ISO 27001 auditors.
               </p>
               <div className="pt-2 text-[10px] font-mono text-slate-400 dark:text-zinc-500">
                 <span>SHA-256 Merkle Chaining</span>
@@ -711,7 +721,7 @@ export default function LandingPage() {
                   <div className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">
                     {ticketApproved ? (
                       <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-semibold">
-                        <CheckCircle2 className="h-4 w-4" /> Signed by Alex Mercer (CFO) — Merkle block #49102
+                        <CheckCircle2 className="h-4 w-4" /> Signed by Alex Mercer (CFO): Merkle block #49102
                       </span>
                     ) : (
                       <span>Requires: Role CFO or Finance Director</span>
@@ -825,6 +835,235 @@ export default function LandingPage() {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      {/* 6B. DEVELOPER QUICKSTART & AGENT ONBOARDING */}
+      <section id="developers" className="py-24 border-b border-slate-200 dark:border-white/[0.08] bg-slate-900 text-white dark:bg-[#07080A] relative overflow-hidden">
+        <div className="absolute inset-0 tactile-grid opacity-15 pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10 space-y-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <span className="text-xs font-mono font-semibold tracking-wider text-emerald-400 uppercase flex items-center gap-2">
+                <Terminal className="h-3.5 w-3.5" />
+                <span>SELF-SERVE AGENT ONBOARDING</span>
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-tight">
+                Connect Your AI Agents in Seconds
+              </h2>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Anyone can register a workspace, obtain instant MCP credentials, and govern autonomous fleets. Connect Claude Desktop, Cursor IDE, LangChain, or custom autonomous agent scripts via our official SDK and automated installers.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                href="/register"
+                className="px-4 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs transition-all shadow-sm flex items-center gap-2 font-mono"
+              >
+                <span>Create Free Workspace</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href="/connect"
+                className="px-4 py-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-all flex items-center gap-2 font-mono"
+              >
+                <Plug className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Gateway Hub</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Quickstart Terminal Card */}
+          <div className="rounded-2xl border border-white/10 bg-[#0C0D11] shadow-2xl overflow-hidden">
+            {/* Tab Bar */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] bg-[#0E1015] overflow-x-auto">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-rose-500/80 inline-block" />
+                <span className="h-3 w-3 rounded-full bg-amber-500/80 inline-block" />
+                <span className="h-3 w-3 rounded-full bg-emerald-500/80 inline-block" />
+                <span className="ml-2 text-xs font-mono text-zinc-500 hidden sm:inline">armordesk-quickstart</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                {[
+                  { id: "bash", label: "Bash (sh)" },
+                  { id: "powershell", label: "PowerShell (ps1)" },
+                  { id: "npm", label: "NPM / NPX" },
+                  { id: "curl", label: "cURL API" },
+                  { id: "mcp", label: "Claude / Cursor" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setQuickstartTab(t.id as any)}
+                    className={`px-3 py-1 rounded text-xs font-mono transition-colors ${
+                      quickstartTab === t.id
+                        ? "bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Code Content Box */}
+            <div className="p-6 font-mono text-xs text-zinc-300 relative group">
+              {quickstartTab === "bash" && (
+                <div className="space-y-4">
+                  <div className="text-zinc-500 text-[11px]">
+                    # One-line installer for Linux & macOS (probes gateway and sets up @crustdev/armordesk CLI)
+                  </div>
+                  <div className="p-4 rounded-lg bg-[#07080A] border border-white/5 flex items-center justify-between text-emerald-300 overflow-x-auto">
+                    <code>curl -fsSL https://armordesk.crusts.dev/install.sh | bash</code>
+                    <button
+                      onClick={() => handleCopySnippet("curl -fsSL https://armordesk.crusts.dev/install.sh | bash", "bash")}
+                      className="ml-4 px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-white text-[11px] flex items-center gap-1 shrink-0"
+                    >
+                      {copiedSnippet === "bash" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedSnippet === "bash" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <div className="text-zinc-400 text-[11px] space-y-1">
+                    <p>• Automatically checks Node.js environment and live MCP Gateway connectivity.</p>
+                    <p>• Installs the official <code className="text-emerald-400">@crustdev/armordesk</code> CLI globally or via npx.</p>
+                  </div>
+                </div>
+              )}
+
+              {quickstartTab === "powershell" && (
+                <div className="space-y-4">
+                  <div className="text-zinc-500 text-[11px]">
+                    # One-line installer for Windows (PowerShell 5.1+ or PowerShell 7+)
+                  </div>
+                  <div className="p-4 rounded-lg bg-[#07080A] border border-white/5 flex items-center justify-between text-emerald-300 overflow-x-auto">
+                    <code>iwr -useb https://armordesk.crusts.dev/install.ps1 | iex</code>
+                    <button
+                      onClick={() => handleCopySnippet("iwr -useb https://armordesk.crusts.dev/install.ps1 | iex", "ps1")}
+                      className="ml-4 px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-white text-[11px] flex items-center gap-1 shrink-0"
+                    >
+                      {copiedSnippet === "ps1" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedSnippet === "ps1" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <div className="text-zinc-400 text-[11px] space-y-1">
+                    <p>• Probes <code className="text-emerald-400">https://armordesk.crusts.dev/api/mcp/ping</code> directly over HTTPS.</p>
+                    <p>• Sets up executable environment for Windows developers and enterprise workstations.</p>
+                  </div>
+                </div>
+              )}
+
+              {quickstartTab === "npm" && (
+                <div className="space-y-4">
+                  <div className="text-zinc-500 text-[11px]">
+                    # Run commands instantly with NPX or install the official package:
+                  </div>
+                  <div className="p-4 rounded-lg bg-[#07080A] border border-white/5 space-y-2 text-zinc-300 overflow-x-auto">
+                    <div>
+                      <span className="text-zinc-500">$ </span>
+                      <span className="text-emerald-400">npx @crustdev/armordesk login</span> --email your-email@company.com
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">$ </span>
+                      <span className="text-emerald-400">npx @crustdev/armordesk mcp check</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">$ </span>
+                      <span className="text-emerald-400">npx @crustdev/armordesk whoami</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() =>
+                        handleCopySnippet(
+                          "npx @crustdev/armordesk login\nnpx @crustdev/armordesk mcp check",
+                          "npm"
+                        )
+                      }
+                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-white text-[11px] flex items-center gap-1"
+                    >
+                      {copiedSnippet === "npm" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedSnippet === "npm" ? "Copied Snippet" : "Copy Commands"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickstartTab === "curl" && (
+                <div className="space-y-4">
+                  <div className="text-zinc-500 text-[11px]">
+                    # Invoke Governed Tools directly via JSON-RPC 2.0 HTTP Gateway:
+                  </div>
+                  <pre className="p-4 rounded-lg bg-[#07080A] border border-white/5 text-emerald-300 overflow-x-auto text-[11px] leading-relaxed">
+{`curl -X POST https://armordesk.crusts.dev/api/mcp/gateway \\
+  -H "Content-Type: application/json" \\
+  -H "X-ArmorIQ-Tenant: acme-corp" \\
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "bank.wire_transfer",
+      "arguments": {"recipient": "AWS Cloud", "amount": 8000.00},
+      "context": {"user_role": "manager", "user_name": "Sarah Chen"}
+    }
+  }'`}
+                  </pre>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() =>
+                        handleCopySnippet(
+                          `curl -X POST https://armordesk.crusts.dev/api/mcp/gateway \\\n  -H "Content-Type: application/json" \\\n  -H "X-ArmorIQ-Tenant: acme-corp" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"bank.wire_transfer","arguments":{"recipient":"AWS Cloud","amount":8000.00},"context":{"user_role":"manager","user_name":"Sarah Chen"}}}'`,
+                          "curl"
+                        )
+                      }
+                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-white text-[11px] flex items-center gap-1"
+                    >
+                      {copiedSnippet === "curl" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedSnippet === "curl" ? "Copied" : "Copy cURL"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickstartTab === "mcp" && (
+                <div className="space-y-4">
+                  <div className="text-zinc-500 text-[11px]">
+                    # Add to your Claude Desktop configuration (claude_desktop_config.json):
+                  </div>
+                  <pre className="p-4 rounded-lg bg-[#07080A] border border-white/5 text-emerald-300 overflow-x-auto text-[11px] leading-relaxed">
+{`{
+  "mcpServers": {
+    "armordesk_gateway": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch", "https://armordesk.crusts.dev/api/mcp/gateway"],
+      "env": {
+        "ARMORIQ_TENANT": "acme-corp",
+        "ARMORIQ_API_KEY": "ak_live_acme_corp"
+      }
+    }
+  }
+}`}
+                  </pre>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() =>
+                        handleCopySnippet(
+                          `{\n  "mcpServers": {\n    "armordesk_gateway": {\n      "command": "npx",\n      "args": ["-y", "@modelcontextprotocol/server-fetch", "https://armordesk.crusts.dev/api/mcp/gateway"],\n      "env": {\n        "ARMORIQ_TENANT": "acme-corp",\n        "ARMORIQ_API_KEY": "ak_live_acme_corp"\n      }\n    }\n  }\n}`,
+                          "mcp_cfg"
+                        )
+                      }
+                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-white text-[11px] flex items-center gap-1"
+                    >
+                      {copiedSnippet === "mcp_cfg" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedSnippet === "mcp_cfg" ? "Copied" : "Copy MCP JSON"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
