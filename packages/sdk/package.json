@@ -1,0 +1,56 @@
+{
+  "name": "@crustdev/armordesk",
+  "version": "1.0.1",
+  "description": "Official TypeScript SDK and CLI for ArmorDesk: Enterprise AI Agent Control Plane, Governed MCP Gateway, and Cryptographic Trust Center.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "armordesk": "bin/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/cli.ts --clean --format cjs,esm && tsc --emitDeclarationOnly",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "armordesk",
+    "armoriq",
+    "mcp",
+    "model-context-protocol",
+    "ai-agent-governance",
+    "security",
+    "control-plane",
+    "cryptographic-proof",
+    "merkle-tree",
+    "finops",
+    "crustdev"
+  ],
+  "author": "Jumarr <rustaman@crusts.dev>",
+  "license": "MIT",
+  "homepage": "https://armordesk.crusts.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rustaman1280/ArmorDesk.git"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.0"
+  }
+}
