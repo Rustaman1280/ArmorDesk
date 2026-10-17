@@ -125,7 +125,54 @@ EOF
     echo -e "${BOLD}🤖 AI Agent Detection & Auto-Connection:${NC}"
     echo "------------------------------------------------------------"
 
-    # OpenCode
+    # Antigravity CLI
+    AGY_CFG="$HOME/.gemini/config/mcp_config.json"
+    if [ -f "$AGY_CFG" ] || [ -d "$HOME/.gemini" ] || command -v agy >/dev/null 2>&1 || command -v antigravity >/dev/null 2>&1; then
+      mkdir -p "$(dirname "$AGY_CFG")"
+      python3 -c "
+import json, os
+p = os.path.expanduser('$AGY_CFG')
+data = {}
+if os.path.exists(p):
+    try:
+        with open(p) as f: data = json.load(f)
+    except: pass
+if 'mcpServers' not in data: data['mcpServers'] = {}
+data['mcpServers']['armordesk'] = {
+    'serverUrl': 'https://armordesk.crusts.dev/api/mcp/gateway',
+    'disabled': False,
+    'headers': {
+        'X-ArmorIQ-Tenant': '$TENANT_ID',
+        'Authorization': 'Bearer $TOKEN'
+    }
+}
+with open(p, 'w') as f: json.dump(data, f, indent=2)
+" 2>/dev/null && echo -e " [✓] Auto-connected to ${GREEN}Antigravity CLI (agy)${NC} ($AGY_CFG)" || true
+    fi
+
+    # OpenAI Codex CLI (vodek)
+    CODEX_CFG="$HOME/.codex/config.toml"
+    if [ -f "$CODEX_CFG" ] || [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
+      mkdir -p "$(dirname "$CODEX_CFG")"
+      if [ -f "$CODEX_CFG" ] && grep -q "armordesk" "$CODEX_CFG"; then
+        echo -e " [✓] OpenAI Codex already has ArmorDesk configured"
+      else
+        cat << EOF >> "$CODEX_CFG"
+
+# ArmorDesk Governed MCP Gateway
+[mcp_servers.armordesk]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-fetch", "https://armordesk.crusts.dev/api/mcp/gateway"]
+
+[mcp_servers.armordesk.env]
+ARMORIQ_TENANT = "$TENANT_ID"
+ARMORIQ_API_KEY = "$TOKEN"
+EOF
+        echo -e " [✓] Auto-connected to ${GREEN}OpenAI Codex CLI (vodek)${NC} ($CODEX_CFG)"
+      fi
+    fi
+
+    # OpenCode (openvode)
     OPENCODE_CFG="$HOME/.config/opencode/opencode.json"
     if [ -f "$OPENCODE_CFG" ] || command -v opencode >/dev/null 2>&1; then
       mkdir -p "$(dirname "$OPENCODE_CFG")"
@@ -242,12 +289,18 @@ with open(p, 'w') as f: json.dump(data, f, indent=2)
 
     echo ""
     echo -e "${YELLOW}ℹ Additional agents can be connected anytime:${NC}"
-    echo -e "  • OpenCode:   ${CYAN}npx @crustdev/armordesk mcp inject opencode${NC}"
-    echo -e "  • Hermes:     ${CYAN}npx @crustdev/armordesk mcp inject hermes${NC}"
-    echo -e "  • OpenClaw:   ${CYAN}npx @crustdev/armordesk mcp inject openclaw${NC}"
-    echo -e "  • Claude:     ${CYAN}npx @crustdev/armordesk mcp inject claude${NC}"
-    echo -e "  • Cursor:     ${CYAN}npx @crustdev/armordesk mcp inject cursor${NC}"
-    echo -e "  • Windsurf:   ${CYAN}npx @crustdev/armordesk mcp inject windsurf${NC}"
+    echo -e "  • Antigravity: ${CYAN}npx @crustdev/armordesk mcp inject antigravity${NC}"
+    echo -e "  • OpenCode:    ${CYAN}npx @crustdev/armordesk mcp inject opencode${NC}"
+    echo -e "  • OpenAI Codex:${CYAN}npx @crustdev/armordesk mcp inject codex${NC}"
+    echo -e "  • Hermes:      ${CYAN}npx @crustdev/armordesk mcp inject hermes${NC}"
+    echo -e "  • OpenClaw:    ${CYAN}npx @crustdev/armordesk mcp inject openclaw${NC}"
+    echo -e "  • Claude:      ${CYAN}npx @crustdev/armordesk mcp inject claude${NC}"
+    echo -e "  • Cursor:      ${CYAN}npx @crustdev/armordesk mcp inject cursor${NC}"
+    echo -e "  • Windsurf:    ${CYAN}npx @crustdev/armordesk mcp inject windsurf${NC}"
+    echo -e "  • Cline:       ${CYAN}npx @crustdev/armordesk mcp inject cline${NC}"
+    echo -e "  • Roo Code:    ${CYAN}npx @crustdev/armordesk mcp inject roocode${NC}"
+    echo -e "  • Continue:    ${CYAN}npx @crustdev/armordesk mcp inject continue${NC}"
+    echo -e "  • Zed IDE:     ${CYAN}npx @crustdev/armordesk mcp inject zed${NC}"
 
     echo ""
     echo "============================================================"

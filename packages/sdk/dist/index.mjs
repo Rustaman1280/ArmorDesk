@@ -14,10 +14,11 @@ import {
   hashSha256,
   injectAgentMCP,
   loadStoredConfig,
+  resolveAgentAlias,
   saveStoredConfig,
   verifyMerkleRoot,
   verifyProof
-} from "./chunk-N7CZHRKB.mjs";
+} from "./chunk-HWPT3W34.mjs";
 export {
   ArmorDeskClient,
   buildMerkleTree,
@@ -34,6 +35,7 @@ export {
   hashSha256,
   injectAgentMCP,
   loadStoredConfig,
+  resolveAgentAlias,
   saveStoredConfig,
   verifyMerkleRoot,
   verifyProof

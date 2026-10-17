@@ -31,7 +31,7 @@ export default function ConnectGatewayPage() {
   const { tenantId, currentUser, currentTenant, triggerReload, addToast } = useApp();
 
   const [mcpConfig, setMcpConfig] = useState<MCPGatewayConfig | null>(null);
-  const [activeTab, setActiveTab] = useState<"bash" | "powershell" | "cli" | "claude" | "cursor" | "python" | "curl">("bash");
+  const [activeTab, setActiveTab] = useState<"bash" | "powershell" | "cli" | "antigravity" | "codex" | "claude" | "cursor" | "python" | "curl">("bash");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState<boolean>(false);
 
@@ -266,6 +266,8 @@ export default function ConnectGatewayPage() {
               { id: "bash", label: "Bash (sh)" },
               { id: "powershell", label: "PowerShell (ps1)" },
               { id: "cli", label: "NPM / CLI" },
+              { id: "antigravity", label: "Antigravity (agy)" },
+              { id: "codex", label: "Codex (vodek)" },
               { id: "claude", label: "Claude Desktop" },
               { id: "cursor", label: "Cursor IDE" },
               { id: "python", label: "Python SDK" },
@@ -293,6 +295,8 @@ export default function ConnectGatewayPage() {
               {activeTab === "bash" && "curl -fsSL https://armordesk.crusts.dev/install.sh | bash"}
               {activeTab === "powershell" && "iwr -useb https://armordesk.crusts.dev/install.ps1 | iex"}
               {activeTab === "cli" && "npx @crustdev/armordesk"}
+              {activeTab === "antigravity" && "agy mcp add (Antigravity CLI)"}
+              {activeTab === "codex" && "~/.codex/config.toml (OpenAI Codex CLI)"}
               {activeTab === "claude" && "claude_desktop_config.json"}
               {activeTab === "cursor" && ".cursor/mcp.json"}
               {activeTab === "python" && "finops_agent.py (LangChain / CrewAI / Custom)"}
@@ -305,6 +309,8 @@ export default function ConnectGatewayPage() {
                 if (activeTab === "bash") text = "curl -fsSL https://armordesk.crusts.dev/install.sh | bash";
                 else if (activeTab === "powershell") text = "iwr -useb https://armordesk.crusts.dev/install.ps1 | iex";
                 else if (activeTab === "cli") text = `npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.dev"}\nnpx @crustdev/armordesk mcp check`;
+                else if (activeTab === "antigravity") text = `agy mcp add --header "X-ArmorIQ-Tenant: ${tenantId}" --header "Authorization: Bearer ${apiKey}" armordesk ${gatewayUrl}`;
+                else if (activeTab === "codex") text = `[mcp_servers.armordesk]\ncommand = "npx"\nargs = ["-y", "@modelcontextprotocol/server-fetch", "${gatewayUrl}"]\n\n[mcp_servers.armordesk.env]\nARMORIQ_TENANT = "${tenantId}"\nARMORIQ_API_KEY = "${apiKey}"`;
                 else if (activeTab === "claude") text = mcpConfig?.sample_configs.claude_desktop || "";
                 else if (activeTab === "cursor") text = mcpConfig?.sample_configs.cursor || "";
                 else if (activeTab === "python") text = mcpConfig?.sample_configs.python_sdk || "";
@@ -321,7 +327,7 @@ export default function ConnectGatewayPage() {
           <pre className="p-4 overflow-x-auto text-emerald-400 leading-relaxed text-[11px]">
             {activeTab === "bash" && (
 `# 1. Run the official automated installer for Linux & macOS:
-#    (Auto-detects OpenCode, Hermes, OpenClaw, Claude, Cursor)
+#    (Auto-detects Antigravity, OpenCode, Codex, Hermes, Claude, Cursor)
 curl -fsSL https://armordesk.crusts.dev/install.sh | bash
 
 # 2. Or authenticate with your corporate tenant:
@@ -330,7 +336,7 @@ npx @crustdev/armordesk login --email ${currentUser?.email || "rustaman@crusts.d
 # 3. Probe and verify your Governed MCP Gateway:
 npx @crustdev/armordesk mcp check
 
-# 4. Auto-connect detected agents after login:
+# 4. Auto-connect all detected agents after login:
 npx @crustdev/armordesk mcp inject all
 
 # 5. Get the AI System Prompt to paste in your LLM:
@@ -362,18 +368,53 @@ npx @crustdev/armordesk mcp detect
 npx @crustdev/armordesk mcp inject all
 
 # Or inject into a specific agent:
+npx @crustdev/armordesk mcp inject antigravity
 npx @crustdev/armordesk mcp inject opencode
+npx @crustdev/armordesk mcp inject codex
 npx @crustdev/armordesk mcp inject hermes
 npx @crustdev/armordesk mcp inject openclaw
 npx @crustdev/armordesk mcp inject claude
 npx @crustdev/armordesk mcp inject cursor
 npx @crustdev/armordesk mcp inject windsurf
+npx @crustdev/armordesk mcp inject cline
+npx @crustdev/armordesk mcp inject roocode
+npx @crustdev/armordesk mcp inject continue
+npx @crustdev/armordesk mcp inject zed
 
 # Get the AI System Prompt for manual configuration:
 npx @crustdev/armordesk mcp prompt
 
 # Run governance scenarios:
 npx @crustdev/armordesk scenario 1`
+            )}
+            {activeTab === "antigravity" && (
+`# Option A: One-line auto-configuration via ArmorDesk CLI:
+npx @crustdev/armordesk mcp inject antigravity
+
+# Option B: Add directly using native Antigravity CLI command:
+agy mcp add --header "X-ArmorIQ-Tenant: ${tenantId}" --header "Authorization: Bearer ${apiKey}" armordesk ${gatewayUrl}
+
+# Verify configured MCP servers in Antigravity:
+agy mcp list
+
+# Test tool execution through Antigravity:
+agy -p "Use bank.refund tool through ArmorDesk to refund $20 to Alice for SLA credit"`
+            )}
+            {activeTab === "codex" && (
+`# Option A: One-line auto-configuration via ArmorDesk CLI:
+npx @crustdev/armordesk mcp inject codex    # (alias: vodek)
+
+# Option B: Add manually to ~/.codex/config.toml:
+[mcp_servers.armordesk]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-fetch", "${gatewayUrl}"]
+
+[mcp_servers.armordesk.env]
+ARMORIQ_TENANT = "${tenantId}"
+ARMORIQ_API_KEY = "${apiKey}"
+
+# Verify with Codex:
+codex exec "Check available tools from armordesk MCP server"`
             )}
             {activeTab === "claude" && (mcpConfig?.sample_configs.claude_desktop || "Loading config...")}
             {activeTab === "cursor" && (mcpConfig?.sample_configs.cursor || "Loading config...")}

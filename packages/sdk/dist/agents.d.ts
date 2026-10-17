@@ -1,13 +1,15 @@
+export type AgentId = "antigravity" | "opencode" | "codex" | "hermes" | "openclaw" | "claude" | "cursor" | "windsurf" | "cline" | "roocode" | "continue" | "zed";
 export interface DetectedAgent {
-    id: "opencode" | "hermes" | "openclaw" | "claude" | "cursor" | "windsurf";
+    id: AgentId;
     name: string;
     configPath: string;
     isInstalled: boolean;
     isConfigured: boolean;
 }
-export declare function getAgentPaths(): Record<string, string>;
+export declare function resolveAgentAlias(input: string): AgentId | null;
+export declare function getAgentPaths(): Record<AgentId, string>;
 export declare function detectInstalledAgents(): DetectedAgent[];
-export declare function injectAgentMCP(agentId: string, options: {
+export declare function injectAgentMCP(agentNameOrAlias: string, options: {
     tenantId: string;
     token?: string;
     baseUrl?: string;

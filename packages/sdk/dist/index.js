@@ -35,6 +35,7 @@ __export(index_exports, {
   hashSha256: () => hashSha256,
   injectAgentMCP: () => injectAgentMCP,
   loadStoredConfig: () => loadStoredConfig,
+  resolveAgentAlias: () => resolveAgentAlias,
   saveStoredConfig: () => saveStoredConfig,
   verifyMerkleRoot: () => verifyMerkleRoot,
   verifyProof: () => verifyProof
@@ -458,156 +459,186 @@ var import_node_fs2 = require("fs");
 var import_node_os2 = require("os");
 var import_node_path2 = require("path");
 var import_node_child_process = require("child_process");
+function resolveAgentAlias(input) {
+  const norm = input.toLowerCase().trim();
+  if (norm === "antigravity" || norm === "agy") return "antigravity";
+  if (norm === "opencode" || norm === "openvode") return "opencode";
+  if (norm === "codex" || norm === "vodek" || norm === "openai-codex") return "codex";
+  if (norm === "hermes" || norm === "hermes-agent") return "hermes";
+  if (norm === "openclaw" || norm === "claw") return "openclaw";
+  if (norm === "claude" || norm === "claude-desktop") return "claude";
+  if (norm === "cursor") return "cursor";
+  if (norm === "windsurf" || norm === "codeium") return "windsurf";
+  if (norm === "cline") return "cline";
+  if (norm === "roocode" || norm === "roo-code" || norm === "roo") return "roocode";
+  if (norm === "continue" || norm === "continue.dev") return "continue";
+  if (norm === "zed") return "zed";
+  return null;
+}
 function getAgentPaths() {
   const home = (0, import_node_os2.homedir)();
   const os = (0, import_node_os2.platform)();
+  let vscodeGlobal = (0, import_node_path2.join)(home, ".config", "Code", "User", "globalStorage");
+  let zedPath = (0, import_node_path2.join)(home, ".config", "zed", "settings.json");
   let claudePath = (0, import_node_path2.join)(home, ".config", "Claude", "claude_desktop_config.json");
   if (os === "darwin") {
     claudePath = (0, import_node_path2.join)(home, "Library", "Application Support", "Claude", "claude_desktop_config.json");
+    vscodeGlobal = (0, import_node_path2.join)(home, "Library", "Application Support", "Code", "User", "globalStorage");
+    zedPath = (0, import_node_path2.join)(home, "Library", "Application Support", "Zed", "settings.json");
   } else if (os === "win32") {
-    claudePath = (0, import_node_path2.join)(process.env.APPDATA || (0, import_node_path2.join)(home, "AppData", "Roaming"), "Claude", "claude_desktop_config.json");
+    const appData = process.env.APPDATA || (0, import_node_path2.join)(home, "AppData", "Roaming");
+    claudePath = (0, import_node_path2.join)(appData, "Claude", "claude_desktop_config.json");
+    vscodeGlobal = (0, import_node_path2.join)(appData, "Code", "User", "globalStorage");
+    zedPath = (0, import_node_path2.join)(appData, "Zed", "settings.json");
+  }
+  let antigravityPath = (0, import_node_path2.join)(home, ".gemini", "config", "mcp_config.json");
+  if (!(0, import_node_fs2.existsSync)((0, import_node_path2.join)(home, ".gemini", "config")) && (0, import_node_fs2.existsSync)((0, import_node_path2.join)(home, ".antigravity"))) {
+    antigravityPath = (0, import_node_path2.join)(home, ".antigravity", "mcp_config.json");
   }
   return {
+    antigravity: antigravityPath,
     opencode: (0, import_node_path2.join)(home, ".config", "opencode", "opencode.json"),
+    codex: (0, import_node_path2.join)(home, ".codex", "config.toml"),
     hermes: (0, import_node_path2.join)(home, ".hermes", "config.yaml"),
     openclaw: (0, import_node_path2.join)(home, ".openclaw", "config.yaml"),
     claude: claudePath,
     cursor: (0, import_node_path2.join)(home, ".cursor", "mcp.json"),
-    windsurf: (0, import_node_path2.join)(home, ".codeium", "windsurf", "mcp_config.json")
+    windsurf: (0, import_node_path2.join)(home, ".codeium", "windsurf", "mcp_config.json"),
+    cline: (0, import_node_path2.join)(vscodeGlobal, "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json"),
+    roocode: (0, import_node_path2.join)(vscodeGlobal, "rooveterinaryinc.roo-cline", "settings", "cline_mcp_settings.json"),
+    continue: (0, import_node_path2.join)(home, ".continue", "config.json"),
+    zed: zedPath
   };
 }
 function detectInstalledAgents() {
   const paths = getAgentPaths();
   const results = [];
-  let opencodeInstalled = (0, import_node_fs2.existsSync)(paths.opencode);
-  if (!opencodeInstalled) {
+  const hasBinary = (cmd) => {
     try {
-      (0, import_node_child_process.execSync)("which opencode || where opencode", { stdio: "ignore" });
-      opencodeInstalled = true;
+      (0, import_node_child_process.execSync)(`which ${cmd} || where ${cmd}`, { stdio: "ignore" });
+      return true;
     } catch {
+      return false;
     }
-  }
-  let opencodeConfigured = false;
-  if ((0, import_node_fs2.existsSync)(paths.opencode)) {
+  };
+  const fileHasArmor = (p) => {
+    if (!(0, import_node_fs2.existsSync)(p)) return false;
     try {
-      const content = (0, import_node_fs2.readFileSync)(paths.opencode, "utf8");
-      opencodeConfigured = content.includes("armordesk");
+      const content = (0, import_node_fs2.readFileSync)(p, "utf8");
+      return content.includes("armordesk");
     } catch {
+      return false;
     }
-  }
+  };
+  const antigravityInstalled = (0, import_node_fs2.existsSync)(paths.antigravity) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)((0, import_node_os2.homedir)(), ".gemini", "antigravity-cli")) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)((0, import_node_os2.homedir)(), ".local", "bin", "agy")) || hasBinary("agy") || hasBinary("antigravity");
+  results.push({
+    id: "antigravity",
+    name: "Antigravity CLI (agy)",
+    configPath: paths.antigravity,
+    isInstalled: antigravityInstalled,
+    isConfigured: fileHasArmor(paths.antigravity)
+  });
+  const opencodeInstalled = (0, import_node_fs2.existsSync)(paths.opencode) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)((0, import_node_os2.homedir)(), ".opencode")) || hasBinary("opencode");
   results.push({
     id: "opencode",
     name: "OpenCode CLI",
     configPath: paths.opencode,
     isInstalled: opencodeInstalled,
-    isConfigured: opencodeConfigured
+    isConfigured: fileHasArmor(paths.opencode)
   });
-  let hermesInstalled = (0, import_node_fs2.existsSync)(paths.hermes);
-  if (!hermesInstalled) {
-    try {
-      (0, import_node_child_process.execSync)("which hermes || where hermes", { stdio: "ignore" });
-      hermesInstalled = true;
-    } catch {
-    }
-  }
-  let hermesConfigured = false;
-  if ((0, import_node_fs2.existsSync)(paths.hermes)) {
-    try {
-      const content = (0, import_node_fs2.readFileSync)(paths.hermes, "utf8");
-      hermesConfigured = content.includes("armordesk");
-    } catch {
-    }
-  }
+  const codexInstalled = (0, import_node_fs2.existsSync)(paths.codex) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)((0, import_node_os2.homedir)(), ".codex")) || hasBinary("codex");
+  results.push({
+    id: "codex",
+    name: "OpenAI Codex CLI",
+    configPath: paths.codex,
+    isInstalled: codexInstalled,
+    isConfigured: fileHasArmor(paths.codex)
+  });
+  const hermesInstalled = (0, import_node_fs2.existsSync)(paths.hermes) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)((0, import_node_os2.homedir)(), ".hermes")) || hasBinary("hermes");
   results.push({
     id: "hermes",
     name: "Hermes Agent",
     configPath: paths.hermes,
     isInstalled: hermesInstalled,
-    isConfigured: hermesConfigured
+    isConfigured: fileHasArmor(paths.hermes)
   });
-  let openclawInstalled = (0, import_node_fs2.existsSync)(paths.openclaw) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.openclaw, ".."));
-  if (!openclawInstalled) {
-    try {
-      (0, import_node_child_process.execSync)("which openclaw || where openclaw", { stdio: "ignore" });
-      openclawInstalled = true;
-    } catch {
-    }
-  }
-  let openclawConfigured = false;
-  if ((0, import_node_fs2.existsSync)(paths.openclaw)) {
-    try {
-      const content = (0, import_node_fs2.readFileSync)(paths.openclaw, "utf8");
-      openclawConfigured = content.includes("armordesk");
-    } catch {
-    }
-  }
+  const openclawInstalled = (0, import_node_fs2.existsSync)(paths.openclaw) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)((0, import_node_os2.homedir)(), ".openclaw")) || hasBinary("openclaw");
   results.push({
     id: "openclaw",
     name: "OpenClaw Agent",
     configPath: paths.openclaw,
     isInstalled: openclawInstalled,
-    isConfigured: openclawConfigured
+    isConfigured: fileHasArmor(paths.openclaw)
   });
   const claudeInstalled = (0, import_node_fs2.existsSync)(paths.claude) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.claude, ".."));
-  let claudeConfigured = false;
-  if ((0, import_node_fs2.existsSync)(paths.claude)) {
-    try {
-      const content = (0, import_node_fs2.readFileSync)(paths.claude, "utf8");
-      claudeConfigured = content.includes("armordesk");
-    } catch {
-    }
-  }
   results.push({
     id: "claude",
     name: "Claude Desktop",
     configPath: paths.claude,
     isInstalled: claudeInstalled,
-    isConfigured: claudeConfigured
+    isConfigured: fileHasArmor(paths.claude)
   });
   const cursorInstalled = (0, import_node_fs2.existsSync)(paths.cursor) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.cursor, ".."));
-  let cursorConfigured = false;
-  if ((0, import_node_fs2.existsSync)(paths.cursor)) {
-    try {
-      const content = (0, import_node_fs2.readFileSync)(paths.cursor, "utf8");
-      cursorConfigured = content.includes("armordesk");
-    } catch {
-    }
-  }
   results.push({
     id: "cursor",
     name: "Cursor IDE",
     configPath: paths.cursor,
     isInstalled: cursorInstalled,
-    isConfigured: cursorConfigured
+    isConfigured: fileHasArmor(paths.cursor)
   });
   const windsurfInstalled = (0, import_node_fs2.existsSync)(paths.windsurf) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.windsurf, ".."));
-  let windsurfConfigured = false;
-  if ((0, import_node_fs2.existsSync)(paths.windsurf)) {
-    try {
-      const content = (0, import_node_fs2.readFileSync)(paths.windsurf, "utf8");
-      windsurfConfigured = content.includes("armordesk");
-    } catch {
-    }
-  }
   results.push({
     id: "windsurf",
     name: "Windsurf IDE",
     configPath: paths.windsurf,
     isInstalled: windsurfInstalled,
-    isConfigured: windsurfConfigured
+    isConfigured: fileHasArmor(paths.windsurf)
+  });
+  const clineInstalled = (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.cline, ".."));
+  results.push({
+    id: "cline",
+    name: "Cline (VS Code)",
+    configPath: paths.cline,
+    isInstalled: clineInstalled,
+    isConfigured: fileHasArmor(paths.cline)
+  });
+  const rooInstalled = (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.roocode, ".."));
+  results.push({
+    id: "roocode",
+    name: "Roo Code (VS Code)",
+    configPath: paths.roocode,
+    isInstalled: rooInstalled,
+    isConfigured: fileHasArmor(paths.roocode)
+  });
+  const continueInstalled = (0, import_node_fs2.existsSync)(paths.continue) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.continue, ".."));
+  results.push({
+    id: "continue",
+    name: "Continue.dev",
+    configPath: paths.continue,
+    isInstalled: continueInstalled,
+    isConfigured: fileHasArmor(paths.continue)
+  });
+  const zedInstalled = (0, import_node_fs2.existsSync)(paths.zed) || (0, import_node_fs2.existsSync)((0, import_node_path2.join)(paths.zed, "..")) || hasBinary("zed");
+  results.push({
+    id: "zed",
+    name: "Zed IDE",
+    configPath: paths.zed,
+    isInstalled: zedInstalled,
+    isConfigured: fileHasArmor(paths.zed)
   });
   return results;
 }
-function injectAgentMCP(agentId, options) {
-  const paths = getAgentPaths();
-  const targetPath = paths[agentId];
-  if (!targetPath) {
+function injectAgentMCP(agentNameOrAlias, options) {
+  const agentId = resolveAgentAlias(agentNameOrAlias);
+  if (!agentId) {
     return {
       success: false,
       configPath: "",
-      message: `Unknown agent target '${agentId}'. Supported: opencode, hermes, claude, cursor, windsurf`
+      message: `Unknown agent identifier '${agentNameOrAlias}'. Supported: antigravity (agy), opencode (openvode), codex (vodek), hermes, openclaw, claude, cursor, windsurf, cline, roocode, continue, zed`
     };
   }
+  const paths = getAgentPaths();
+  const targetPath = paths[agentId];
   const url = `${(options.baseUrl || "https://armordesk.crusts.dev").replace(/\/$/, "")}/api/mcp/gateway`;
   const tenant = options.tenantId || "acme-corp";
   const token = options.token || `ak_live_${tenant}_key`;
@@ -616,6 +647,26 @@ function injectAgentMCP(agentId, options) {
     (0, import_node_fs2.mkdirSync)(dir, { recursive: true });
   }
   try {
+    if (agentId === "antigravity") {
+      let cfg = {};
+      if ((0, import_node_fs2.existsSync)(targetPath)) {
+        try {
+          cfg = JSON.parse((0, import_node_fs2.readFileSync)(targetPath, "utf8"));
+        } catch {
+        }
+      }
+      if (!cfg.mcpServers) cfg.mcpServers = {};
+      cfg.mcpServers.armordesk = {
+        serverUrl: url,
+        disabled: false,
+        headers: {
+          "X-ArmorIQ-Tenant": tenant,
+          Authorization: `Bearer ${token}`
+        }
+      };
+      (0, import_node_fs2.writeFileSync)(targetPath, JSON.stringify(cfg, null, 2), "utf8");
+      return { success: true, configPath: targetPath, message: "Antigravity CLI MCP configuration updated." };
+    }
     if (agentId === "opencode") {
       let cfg = {};
       if ((0, import_node_fs2.existsSync)(targetPath)) {
@@ -637,13 +688,38 @@ function injectAgentMCP(agentId, options) {
       (0, import_node_fs2.writeFileSync)(targetPath, JSON.stringify(cfg, null, 2), "utf8");
       return { success: true, configPath: targetPath, message: "OpenCode config updated successfully." };
     }
+    if (agentId === "codex") {
+      let content = "";
+      if ((0, import_node_fs2.existsSync)(targetPath)) {
+        content = (0, import_node_fs2.readFileSync)(targetPath, "utf8");
+      }
+      if (content.includes("armordesk")) {
+        return { success: true, configPath: targetPath, message: "Codex config already contains armordesk MCP server." };
+      }
+      const codexSnippet = `
+# ArmorDesk Governed MCP Gateway
+[mcp_servers.armordesk]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-fetch", "${url}"]
+
+[mcp_servers.armordesk.env]
+ARMORIQ_TENANT = "${tenant}"
+ARMORIQ_API_KEY = "${token}"
+`;
+      (0, import_node_fs2.writeFileSync)(targetPath, content + codexSnippet, "utf8");
+      return { success: true, configPath: targetPath, message: "OpenAI Codex config.toml updated successfully." };
+    }
     if (agentId === "hermes" || agentId === "openclaw") {
       let content = "";
       if ((0, import_node_fs2.existsSync)(targetPath)) {
         content = (0, import_node_fs2.readFileSync)(targetPath, "utf8");
       }
       if (content.includes("armordesk:")) {
-        return { success: true, configPath: targetPath, message: `${agentId === "hermes" ? "Hermes" : "OpenClaw"} config already has armordesk configured.` };
+        return {
+          success: true,
+          configPath: targetPath,
+          message: `${agentId === "hermes" ? "Hermes" : "OpenClaw"} config already has armordesk configured.`
+        };
       }
       const snippet = `
 # ArmorDesk Governed MCP Gateway
@@ -655,9 +731,13 @@ mcp_servers:
       Authorization: "Bearer ${token}"
 `;
       (0, import_node_fs2.writeFileSync)(targetPath, content + snippet, "utf8");
-      return { success: true, configPath: targetPath, message: `${agentId === "hermes" ? "Hermes Agent" : "OpenClaw Agent"} config updated successfully.` };
+      return {
+        success: true,
+        configPath: targetPath,
+        message: `${agentId === "hermes" ? "Hermes Agent" : "OpenClaw Agent"} config updated successfully.`
+      };
     }
-    if (agentId === "claude" || agentId === "cursor" || agentId === "windsurf") {
+    if (agentId === "claude") {
       let cfg = {};
       if ((0, import_node_fs2.existsSync)(targetPath)) {
         try {
@@ -666,26 +746,104 @@ mcp_servers:
         }
       }
       if (!cfg.mcpServers) cfg.mcpServers = {};
-      if (agentId === "claude") {
-        cfg.mcpServers.armordesk_gateway = {
-          command: "npx",
-          args: ["-y", "@modelcontextprotocol/server-fetch", url],
-          env: {
-            ARMORIQ_TENANT: tenant,
-            ARMORIQ_API_KEY: token
-          }
-        };
-      } else {
-        cfg.mcpServers.armordesk = {
-          url,
-          headers: {
-            "X-ArmorIQ-Tenant": tenant,
-            Authorization: `Bearer ${token}`
-          }
-        };
+      cfg.mcpServers.armordesk_gateway = {
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-fetch", url],
+        env: {
+          ARMORIQ_TENANT: tenant,
+          ARMORIQ_API_KEY: token
+        }
+      };
+      (0, import_node_fs2.writeFileSync)(targetPath, JSON.stringify(cfg, null, 2), "utf8");
+      return { success: true, configPath: targetPath, message: "Claude Desktop MCP configuration updated." };
+    }
+    if (agentId === "cursor" || agentId === "windsurf") {
+      let cfg = {};
+      if ((0, import_node_fs2.existsSync)(targetPath)) {
+        try {
+          cfg = JSON.parse((0, import_node_fs2.readFileSync)(targetPath, "utf8"));
+        } catch {
+        }
       }
+      if (!cfg.mcpServers) cfg.mcpServers = {};
+      cfg.mcpServers.armordesk = {
+        url,
+        headers: {
+          "X-ArmorIQ-Tenant": tenant,
+          Authorization: `Bearer ${token}`
+        }
+      };
       (0, import_node_fs2.writeFileSync)(targetPath, JSON.stringify(cfg, null, 2), "utf8");
       return { success: true, configPath: targetPath, message: `${agentId.toUpperCase()} MCP configuration updated.` };
+    }
+    if (agentId === "cline" || agentId === "roocode") {
+      let cfg = {};
+      if ((0, import_node_fs2.existsSync)(targetPath)) {
+        try {
+          cfg = JSON.parse((0, import_node_fs2.readFileSync)(targetPath, "utf8"));
+        } catch {
+        }
+      }
+      if (!cfg.mcpServers) cfg.mcpServers = {};
+      cfg.mcpServers.armordesk = {
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-fetch", url],
+        env: {
+          ARMORIQ_TENANT: tenant,
+          ARMORIQ_API_KEY: token
+        }
+      };
+      (0, import_node_fs2.writeFileSync)(targetPath, JSON.stringify(cfg, null, 2), "utf8");
+      return {
+        success: true,
+        configPath: targetPath,
+        message: `${agentId === "cline" ? "Cline" : "Roo Code"} MCP settings updated.`
+      };
+    }
+    if (agentId === "continue") {
+      let cfg = {};
+      if ((0, import_node_fs2.existsSync)(targetPath)) {
+        try {
+          cfg = JSON.parse((0, import_node_fs2.readFileSync)(targetPath, "utf8"));
+        } catch {
+        }
+      }
+      if (!Array.isArray(cfg.mcpServers)) cfg.mcpServers = [];
+      const filtered = cfg.mcpServers.filter((s) => s.name !== "armordesk");
+      filtered.push({
+        name: "armordesk",
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-fetch", url],
+        env: {
+          ARMORIQ_TENANT: tenant,
+          ARMORIQ_API_KEY: token
+        }
+      });
+      cfg.mcpServers = filtered;
+      (0, import_node_fs2.writeFileSync)(targetPath, JSON.stringify(cfg, null, 2), "utf8");
+      return { success: true, configPath: targetPath, message: "Continue.dev configuration updated." };
+    }
+    if (agentId === "zed") {
+      let cfg = {};
+      if ((0, import_node_fs2.existsSync)(targetPath)) {
+        try {
+          cfg = JSON.parse((0, import_node_fs2.readFileSync)(targetPath, "utf8"));
+        } catch {
+        }
+      }
+      if (!cfg.experimental) cfg.experimental = {};
+      if (!cfg.experimental.model_context_protocol) cfg.experimental.model_context_protocol = {};
+      if (!cfg.experimental.model_context_protocol.servers) cfg.experimental.model_context_protocol.servers = {};
+      cfg.experimental.model_context_protocol.servers.armordesk = {
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-fetch", url],
+        env: {
+          ARMORIQ_TENANT: tenant,
+          ARMORIQ_API_KEY: token
+        }
+      };
+      (0, import_node_fs2.writeFileSync)(targetPath, JSON.stringify(cfg, null, 2), "utf8");
+      return { success: true, configPath: targetPath, message: "Zed IDE settings updated." };
     }
   } catch (err) {
     return { success: false, configPath: targetPath, message: err.message };
@@ -739,6 +897,7 @@ You are operating under enterprise governance enforced by the ArmorDesk Control 
   hashSha256,
   injectAgentMCP,
   loadStoredConfig,
+  resolveAgentAlias,
   saveStoredConfig,
   verifyMerkleRoot,
   verifyProof

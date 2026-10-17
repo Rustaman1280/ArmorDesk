@@ -116,12 +116,18 @@ try {
         Write-Host "------------------------------------------------------------"
         Write-Host "To auto-connect or inject into local coding agents:" -ForegroundColor Gray
         Write-Host " • Auto-connect All:  npx @crustdev/armordesk mcp inject all" -ForegroundColor Cyan
+        Write-Host " • Antigravity CLI:   npx @crustdev/armordesk mcp inject antigravity" -ForegroundColor Cyan
         Write-Host " • OpenCode CLI:      npx @crustdev/armordesk mcp inject opencode" -ForegroundColor Cyan
+        Write-Host " • OpenAI Codex CLI:  npx @crustdev/armordesk mcp inject codex" -ForegroundColor Cyan
         Write-Host " • Hermes Agent:      npx @crustdev/armordesk mcp inject hermes" -ForegroundColor Cyan
         Write-Host " • OpenClaw Agent:    npx @crustdev/armordesk mcp inject openclaw" -ForegroundColor Cyan
         Write-Host " • Claude Desktop:    npx @crustdev/armordesk mcp inject claude" -ForegroundColor Cyan
         Write-Host " • Cursor IDE:        npx @crustdev/armordesk mcp inject cursor" -ForegroundColor Cyan
         Write-Host " • Windsurf IDE:      npx @crustdev/armordesk mcp inject windsurf" -ForegroundColor Cyan
+        Write-Host " • Cline (VS Code):   npx @crustdev/armordesk mcp inject cline" -ForegroundColor Cyan
+        Write-Host " • Roo Code (VS Code):npx @crustdev/armordesk mcp inject roocode" -ForegroundColor Cyan
+        Write-Host " • Continue.dev:      npx @crustdev/armordesk mcp inject continue" -ForegroundColor Cyan
+        Write-Host " • Zed IDE:           npx @crustdev/armordesk mcp inject zed" -ForegroundColor Cyan
 
         Write-Host ""
         Write-Host "============================================================"

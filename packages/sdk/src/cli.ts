@@ -31,8 +31,9 @@ const HELP_TEXT = `
 
   MCP Gateway & AI Agent Auto-Connect:
     mcp [check|status]          Verify if MCP Gateway is connected & reachable
-    mcp detect                  Scan system for installed AI coding agents (OpenCode, Hermes, Claude, Cursor)
+    mcp detect                  Scan system for installed AI coding agents (Antigravity, OpenCode, Codex, Hermes, Claude, etc.)
     mcp inject [agent|all]      Auto-configure ArmorDesk MCP into detected or specified agent
+                                (Supported: antigravity/agy, opencode/openvode, codex/vodek, hermes, openclaw, claude, cursor, windsurf, cline, roocode, continue, zed)
     mcp prompt                  Display ready-to-copy AI System Prompt for any agent or LLM
     mcp claude                  Output Claude Desktop MCP configuration JSON
     mcp cursor                  Output Cursor IDE MCP configuration JSON
@@ -181,7 +182,7 @@ export async function runCLI(args: string[] = process.argv.slice(2)): Promise<vo
               console.log(`\n📁 Session saved to: ${getConfigPath()}`);
               console.log("All armordesk commands will now execute under this identity.");
 
-              console.log("\n🤖 Scanning for Installed AI Agents (OpenCode, Hermes, Claude, Cursor, Windsurf)...");
+              console.log("\n🤖 Scanning for Installed AI Agents (Antigravity, OpenCode, Codex, Hermes, Claude, etc.)...");
               const detected = detectInstalledAgents();
               const installed = detected.filter((d) => d.isInstalled);
               if (installed.length > 0) {
@@ -198,7 +199,7 @@ export async function runCLI(args: string[] = process.argv.slice(2)): Promise<vo
                 }
               } else {
                 console.log("  No local agents detected yet. You can auto-connect anytime with:");
-                console.log("  npx @crustdev/armordesk mcp inject <opencode|hermes|claude|cursor|windsurf>");
+                console.log("  npx @crustdev/armordesk mcp inject <antigravity|opencode|codex|hermes|claude|cursor>");
               }
 
               console.log("\n📋 Governed AI Agent System Directive (Prompt for your LLMs):");
@@ -458,7 +459,7 @@ export async function runCLI(args: string[] = process.argv.slice(2)): Promise<vo
 
           if (targetsToInject.length === 0) {
             console.log("⚠️ No installed agents detected to inject automatically.");
-            console.log("You can force injection by specifying: armordesk mcp inject <opencode|hermes|claude|cursor|windsurf>");
+            console.log("You can force injection by specifying: armordesk mcp inject <antigravity|opencode|codex|hermes|claude|cursor|windsurf|cline|roocode|continue|zed>");
           } else {
             for (const t of targetsToInject) {
               const res = injectAgentMCP(t, {
