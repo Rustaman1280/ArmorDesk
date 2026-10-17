@@ -198,4 +198,28 @@ class RegisterRequest(BaseModel):
     password: str = "demo123"
     initial_deposit: float = 100000.0
 
+class DeviceCodeResponse(BaseModel):
+    device_code: str
+    user_code: str
+    verification_uri: str
+    verification_uri_complete: str
+    expires_in: int = 900
+    interval: int = 2
+
+class DeviceAuthorizeRequest(BaseModel):
+    user_code: str
+    email: str
+    password: Optional[str] = "admin"
+    tenant_id: Optional[str] = None
+    action: str = "APPROVE"
+
+class DevicePollRequest(BaseModel):
+    device_code: str
+
+class DevicePollResponse(BaseModel):
+    status: str
+    token: Optional[str] = None
+    user: Optional[Dict[str, Any]] = None
+    tenant: Optional[Dict[str, Any]] = None
+
 

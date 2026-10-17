@@ -14,7 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { authModalOpen, setAuthModalOpen, isAuthenticated } = useApp();
 
-  const isPublicPage = pathname === "/" || pathname === "/login" || pathname === "/register";
+  const isPublicPage = pathname === "/" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/device");
 
   useEffect(() => {
     if (!isAuthenticated && !isPublicPage) {

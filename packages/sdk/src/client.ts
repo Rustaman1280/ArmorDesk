@@ -16,6 +16,8 @@ import type {
   VoiceBriefingResponse,
   LoginResponse,
   MCPStatusResponse,
+  DeviceCodeResponse,
+  DevicePollResponse,
 } from "./types.js";
 import {
   canonicalJson,
@@ -143,6 +145,25 @@ export class ArmorDeskClient {
     }
 
     return res;
+  }
+
+  /**
+   * Request OAuth 2.0 Device Code for terminal/browser authentication (RFC 8628)
+   */
+  async requestDeviceCode(): Promise<DeviceCodeResponse> {
+    return this.request<DeviceCodeResponse>("/api/auth/device/code", {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Poll OAuth 2.0 Device Code until authorized by user in browser
+   */
+  async pollDeviceCode(deviceCode: string): Promise<DevicePollResponse> {
+    return this.request<DevicePollResponse>("/api/auth/device/poll", {
+      method: "POST",
+      body: JSON.stringify({ device_code: deviceCode }),
+    });
   }
 
   /**

@@ -181,6 +181,20 @@ def init_db(reset: bool = False):
             is_simulated INTEGER DEFAULT 0,
             created_at TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS device_authorizations (
+            device_code TEXT PRIMARY KEY,
+            user_code TEXT UNIQUE NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            user_id TEXT,
+            user_email TEXT,
+            user_name TEXT,
+            user_role TEXT,
+            tenant_id TEXT,
+            token TEXT,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
     """)
 
     # Seed data if empty

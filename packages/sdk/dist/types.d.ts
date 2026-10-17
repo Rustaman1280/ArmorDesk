@@ -45,6 +45,32 @@ export interface LoginResponse {
         currency: string;
     };
 }
+export interface DeviceCodeResponse {
+    device_code: string;
+    user_code: string;
+    verification_uri: string;
+    verification_uri_complete: string;
+    expires_in: number;
+    interval: number;
+}
+export interface DevicePollResponse {
+    status: "PENDING" | "APPROVED" | "DENIED" | "EXPIRED" | string;
+    token?: string;
+    user?: {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+        tenant_id: string;
+    };
+    tenant?: {
+        id: string;
+        name: string;
+        spend_limit: number;
+        balance: number;
+        currency: string;
+    };
+}
 export interface MCPStatusResponse {
     status: string;
     gateway: string;

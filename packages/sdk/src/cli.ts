@@ -1,6 +1,21 @@
+import { exec } from "node:child_process";
 import { ArmorDeskClient } from "./client.js";
 import { generateClaudeDesktopConfig, generateCursorConfig } from "./mcp.js";
-import { loadStoredConfig, clearStoredConfig, getConfigPath } from "./config.js";
+import { loadStoredConfig, saveStoredConfig, clearStoredConfig, getConfigPath } from "./config.js";
+
+function tryOpenBrowser(url: string) {
+  try {
+    const cmd =
+      process.platform === "darwin"
+        ? `open "${url}"`
+        : process.platform === "win32"
+        ? `start "" "${url}"`
+        : `xdg-open "${url}" 2>/dev/null`;
+    exec(cmd, () => {});
+  } catch {
+    // ignore
+  }
+}
 
 const HELP_TEXT = `
   🛡️  ArmorDesk CLI: Enterprise AI Agent Control Plane & MCP Gateway
@@ -79,26 +94,101 @@ export async function runCLI(args: string[] = process.argv.slice(2)): Promise<vo
   try {
     switch (command) {
       case "login": {
-        const email =
-          (flags["email"] as string) ||
-          positional[1] ||
-          "rustaman@crusts.dev";
-        const password = (flags["password"] as string) || "admin";
-        const tenant = (flags["tenant"] as string) || "acme-corp";
+        const explicitEmail = (flags["email"] as string) || (positional[1] && positional[1].includes("@") ? positional[1] : null);
 
-        console.log(`\n🔐 Authenticating with ArmorDesk at ${client.baseUrl}...`);
-        const loginRes = await client.login(email, password, tenant);
+        if (explicitEmail) {
+          const password = (flags["password"] as string) || "admin";
+          const tenant = (flags["tenant"] as string) || "acme-corp";
+
+          console.log(`\n🔐 Authenticating directly with ArmorDesk at ${client.baseUrl}...`);
+          const loginRes = await client.login(explicitEmail, password, tenant);
+
+          console.log("------------------------------------------------------------");
+          console.log(`✅ Logged in successfully as ${loginRes.user.name}!`);
+          console.log(`   Email:        ${loginRes.user.email}`);
+          console.log(`   Role:         ${loginRes.user.role.toUpperCase()}`);
+          console.log(`   Title:        ${loginRes.user.title}`);
+          console.log(`   Tenant:       ${loginRes.tenant.name} (${loginRes.tenant.id})`);
+          console.log(`   Bank Balance: $${loginRes.tenant.balance.toLocaleString()} ${loginRes.tenant.currency}`);
+          console.log(`   Scope:        ${loginRes.user.scopeSummary}`);
+          console.log(`\n📁 Session saved to: ${getConfigPath()}`);
+          console.log("All armordesk commands will now execute under this identity.\n");
+          break;
+        }
+
+        // Browser Device Authorization Flow (OAuth RFC 8628)
+        console.log(`\n🔐 Initiating ArmorDesk Browser Authorization...`);
+        const codeRes = await client.requestDeviceCode();
 
         console.log("------------------------------------------------------------");
-        console.log(`✅ Logged in successfully as ${loginRes.user.name}!`);
-        console.log(`   Email:        ${loginRes.user.email}`);
-        console.log(`   Role:         ${loginRes.user.role.toUpperCase()}`);
-        console.log(`   Title:        ${loginRes.user.title}`);
-        console.log(`   Tenant:       ${loginRes.tenant.name} (${loginRes.tenant.id})`);
-        console.log(`   Bank Balance: $${loginRes.tenant.balance.toLocaleString()} ${loginRes.tenant.currency}`);
-        console.log(`   Scope:        ${loginRes.user.scopeSummary}`);
-        console.log(`\n📁 Session saved to: ${getConfigPath()}`);
-        console.log("All armordesk commands will now execute under this identity.\n");
+        console.log(`  1. Please visit the authorization URL in your browser:`);
+        console.log(`     👉  \x1b[36m\x1b[1m${codeRes.verification_uri_complete}\x1b[0m`);
+        console.log(`\n  2. Confirm your one-time device code:`);
+        console.log(`     🔑  \x1b[32m\x1b[1m${codeRes.user_code}\x1b[0m`);
+        console.log("------------------------------------------------------------");
+        console.log(`Waiting for browser authorization... (Press Ctrl+C to abort)`);
+
+        tryOpenBrowser(codeRes.verification_uri_complete);
+
+        // Poll loop
+        let approved = false;
+        const intervalMs = (codeRes.interval || 2) * 1000;
+        const maxPolls = 450; // 15 mins
+        let polls = 0;
+
+        while (!approved && polls < maxPolls) {
+          await new Promise((r) => setTimeout(r, intervalMs));
+          polls++;
+
+          try {
+            const pollRes = await client.pollDeviceCode(codeRes.device_code);
+            if (pollRes.status === "APPROVED" && pollRes.token && pollRes.user) {
+              approved = true;
+
+              saveStoredConfig({
+                baseUrl: client.baseUrl,
+                token: pollRes.token,
+                user: {
+                  id: pollRes.user.id,
+                  name: pollRes.user.name,
+                  email: pollRes.user.email,
+                  role: pollRes.user.role,
+                  title: pollRes.user.role === "manager" ? "Corporate Officer" : "FinOps Member",
+                  avatar: pollRes.user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "CU",
+                  tenant_id: pollRes.user.tenant_id,
+                  scopeSummary: pollRes.user.role === "manager" ? "Full Treasury & Wire Transfer Approval Authority" : "Restricted View-Only Scope",
+                },
+                tenant: pollRes.tenant,
+                apiKey: client.apiKey,
+                updatedAt: new Date().toISOString(),
+              });
+
+              console.log("\n------------------------------------------------------------");
+              console.log(`✅ Authorization Approved by Browser!`);
+              console.log(`   User:         ${pollRes.user.name} (${pollRes.user.email})`);
+              console.log(`   Role:         ${pollRes.user.role.toUpperCase()}`);
+              console.log(`   Tenant:       ${pollRes.tenant?.name || pollRes.user.tenant_id}`);
+              console.log(`\n📁 Session saved to: ${getConfigPath()}`);
+              console.log("All armordesk commands will now execute under this identity.\n");
+              break;
+            } else if (pollRes.status === "DENIED") {
+              console.error("\n❌ Authorization request was declined in browser.");
+              process.exit(1);
+            } else if (pollRes.status === "EXPIRED") {
+              console.error("\n⌛ Device code has expired. Please run 'armordesk login' again.");
+              process.exit(1);
+            } else {
+              process.stdout.write(".");
+            }
+          } catch (err: any) {
+            // keep polling on transient errors
+          }
+        }
+
+        if (!approved) {
+          console.error("\n⌛ Authorization timed out. Please try logging in again.");
+          process.exit(1);
+        }
         break;
       }
 

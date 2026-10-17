@@ -13,7 +13,7 @@ import {
   saveStoredConfig,
   verifyMerkleRoot,
   verifyProof
-} from "./chunk-YXC2ASA3.mjs";
+} from "./chunk-IKQRJ7XB.mjs";
 export {
   ArmorDeskClient,
   buildMerkleTree,

@@ -1,4 +1,4 @@
-import type { ArmorDeskClientOptions, ArmorDeskStatus, TenantInfo, TraceItem, ApprovalItem, ReceiptItem, VerifyProofRequest, VerifyProofResponse, MCPGatewayConfig, MCPCallResponse, ScenarioRunResponse, CTFSubmitResponse, VoiceBriefingResponse, LoginResponse, MCPStatusResponse } from "./types.js";
+import type { ArmorDeskClientOptions, ArmorDeskStatus, TenantInfo, TraceItem, ApprovalItem, ReceiptItem, VerifyProofRequest, VerifyProofResponse, MCPGatewayConfig, MCPCallResponse, ScenarioRunResponse, CTFSubmitResponse, VoiceBriefingResponse, LoginResponse, MCPStatusResponse, DeviceCodeResponse, DevicePollResponse } from "./types.js";
 import { canonicalJson, generatePlanHash, buildMerkleTree, verifyMerkleRoot, verifyProof } from "./crypto.js";
 export declare class ArmorDeskClient {
     baseUrl: string;
@@ -21,6 +21,14 @@ export declare class ArmorDeskClient {
      * Authenticate with an ArmorDesk account and persist credentials
      */
     login(email: string, password?: string, tenantId?: string): Promise<LoginResponse>;
+    /**
+     * Request OAuth 2.0 Device Code for terminal/browser authentication (RFC 8628)
+     */
+    requestDeviceCode(): Promise<DeviceCodeResponse>;
+    /**
+     * Poll OAuth 2.0 Device Code until authorized by user in browser
+     */
+    pollDeviceCode(deviceCode: string): Promise<DevicePollResponse>;
     /**
      * Check live status and ping telemetry of Governed MCP Gateway
      */

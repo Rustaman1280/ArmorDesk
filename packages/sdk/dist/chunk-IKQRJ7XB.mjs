@@ -203,6 +203,23 @@ var ArmorDeskClient = class {
     return res;
   }
   /**
+   * Request OAuth 2.0 Device Code for terminal/browser authentication (RFC 8628)
+   */
+  async requestDeviceCode() {
+    return this.request("/api/auth/device/code", {
+      method: "POST"
+    });
+  }
+  /**
+   * Poll OAuth 2.0 Device Code until authorized by user in browser
+   */
+  async pollDeviceCode(deviceCode) {
+    return this.request("/api/auth/device/poll", {
+      method: "POST",
+      body: JSON.stringify({ device_code: deviceCode })
+    });
+  }
+  /**
    * Check live status and ping telemetry of Governed MCP Gateway
    */
   async getMCPStatus() {

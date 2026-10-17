@@ -6,7 +6,9 @@ import json
 import os
 import uuid
 import hashlib
-from datetime import datetime, timezone
+import random
+import string
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
@@ -24,7 +26,8 @@ from models import (
     ConfigUpdateRequest, ConfigResponse,
     MCPGatewayInfo, MCPToolDefinition, MCPTestToolRequest,
     VoiceSynthesizeRequest, VoiceBriefingRequest,
-    LoginRequest, RegisterRequest
+    LoginRequest, RegisterRequest,
+    DeviceCodeResponse, DeviceAuthorizeRequest, DevicePollRequest, DevicePollResponse
 )
 from agents.finops_crew import FinOpsCrewOrchestrator
 from armoriq_engine.core import generate_plan_hash, build_merkle_tree, verify_merkle_root
@@ -1286,6 +1289,187 @@ def auth_me(email: Optional[str] = None, tenant_id: Optional[str] = None):
             "currency": b_row["currency"] if b_row else "USD"
         }
     }
+
+# 13B. OAuth 2.0 Device Authorization Flow (RFC 8628)
+@app.post("/api/auth/device/code", response_model=DeviceCodeResponse)
+def create_device_code():
+    """Generates a device authorization code for terminal/CLI browser OAuth login."""
+    backend_base = os.getenv("BACKEND_PUBLIC_URL") or "https://armordesk.crusts.dev"
+    device_code = f"dev_{uuid.uuid4().hex}"
+    
+    # Generate human-friendly 8-character code: e.g. WDXZ-8842
+    letters = ''.join(random.choices(string.ascii_uppercase, k=4))
+    digits = ''.join(random.choices(string.digits, k=4))
+    user_code = f"{letters}-{digits}"
+
+    now = datetime.now(timezone.utc)
+    expires_at = (now + timedelta(minutes=15)).isoformat()
+    now_iso = now.isoformat()
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO device_authorizations (
+            device_code, user_code, status, expires_at, created_at
+        ) VALUES (?, ?, 'PENDING', ?, ?)
+    """, (device_code, user_code, expires_at, now_iso))
+    conn.commit()
+    conn.close()
+
+    return DeviceCodeResponse(
+        device_code=device_code,
+        user_code=user_code,
+        verification_uri=f"{backend_base}/device",
+        verification_uri_complete=f"{backend_base}/device?code={user_code}",
+        expires_in=900,
+        interval=2
+    )
+
+@app.get("/api/auth/device/check")
+def check_device_code(user_code: str = Query(...)):
+    """Used by /device page in browser to inspect device auth state."""
+    code_clean = user_code.strip().upper()
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM device_authorizations WHERE user_code = ?", (code_clean,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Invalid device code")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if row["expires_at"] < now_iso:
+        return {"status": "EXPIRED", "user_code": code_clean, "valid": False}
+
+    return {
+        "status": row["status"],
+        "user_code": code_clean,
+        "valid": True,
+        "user_name": row["user_name"],
+        "user_email": row["user_email"]
+    }
+
+@app.post("/api/auth/device/authorize")
+def authorize_device_code(req: DeviceAuthorizeRequest):
+    """Called from browser /device page when user approves the CLI login."""
+    code_clean = req.user_code.strip().upper()
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM device_authorizations WHERE user_code = ?", (code_clean,))
+    dev_row = cur.fetchone()
+
+    if not dev_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Invalid device code")
+
+    now = datetime.now(timezone.utc)
+    if dev_row["expires_at"] < now.isoformat():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Device code has expired. Please run login again.")
+
+    if req.action == "DENY":
+        cur.execute("UPDATE device_authorizations SET status = 'DENIED' WHERE user_code = ?", (code_clean,))
+        conn.commit()
+        conn.close()
+        return {"status": "DENIED", "message": "Device authorization was rejected."}
+
+    # Resolve User
+    email_clean = req.email.strip().lower()
+    cur.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email_clean,))
+    user_row = cur.fetchone()
+
+    if not user_row:
+        # Create user / tenant if not exists
+        usr_id = f"usr_{uuid.uuid4().hex[:8]}"
+        pw_hash = hashlib.sha256((req.password or "demo123").encode()).hexdigest()
+        tenant_id = req.tenant_id or "acme-corp"
+        cur.execute(
+            "INSERT INTO users VALUES (?, ?, ?, ?, ?, 'manager', 'Corporate User', 'CU', ?)",
+            (usr_id, email_clean, pw_hash, email_clean.split('@')[0].capitalize(), tenant_id, now.isoformat())
+        )
+        conn.commit()
+        cur.execute("SELECT * FROM users WHERE id = ?", (usr_id,))
+        user_row = cur.fetchone()
+
+    token = f"jwt_cli_{uuid.uuid4().hex}"
+    cur.execute("""
+        UPDATE device_authorizations
+        SET status = 'APPROVED',
+            user_id = ?,
+            user_email = ?,
+            user_name = ?,
+            user_role = ?,
+            tenant_id = ?,
+            token = ?
+        WHERE user_code = ?
+    """, (
+        user_row["id"], user_row["email"], user_row["name"],
+        user_row["role"], user_row["tenant_id"], token, code_clean
+    ))
+    conn.commit()
+    conn.close()
+
+    return {
+        "status": "APPROVED",
+        "message": "Device successfully authorized. You can return to your terminal."
+    }
+
+@app.post("/api/auth/device/poll", response_model=DevicePollResponse)
+def poll_device_code(req: DevicePollRequest):
+    """Called by terminal/installer in loop until authorized or rejected."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM device_authorizations WHERE device_code = ?", (req.device_code,))
+    row = cur.fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Device code not found")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if row["expires_at"] < now_iso:
+        conn.close()
+        return DevicePollResponse(status="EXPIRED")
+
+    status = row["status"]
+    if status == "PENDING":
+        conn.close()
+        return DevicePollResponse(status="PENDING")
+    elif status == "DENIED":
+        conn.close()
+        return DevicePollResponse(status="DENIED")
+    elif status == "APPROVED":
+        tenant_id = row["tenant_id"] or "acme-corp"
+        cur.execute("SELECT * FROM tenants WHERE id = ?", (tenant_id,))
+        t_row = cur.fetchone()
+        cur.execute("SELECT * FROM bank_accounts WHERE tenant_id = ?", (tenant_id,))
+        b_row = cur.fetchone()
+        conn.close()
+
+        user_info = {
+            "id": row["user_id"],
+            "name": row["user_name"],
+            "email": row["user_email"],
+            "role": row["user_role"],
+            "tenant_id": tenant_id
+        }
+        tenant_info = {
+            "id": t_row["id"] if t_row else tenant_id,
+            "name": t_row["name"] if t_row else tenant_id,
+            "spend_limit": float(t_row["spend_limit"]) if t_row else 1000.0,
+            "balance": float(b_row["balance"]) if b_row else 0.0,
+            "currency": b_row["currency"] if b_row else "USD"
+        }
+        return DevicePollResponse(
+            status="APPROVED",
+            token=row["token"],
+            user=user_info,
+            tenant=tenant_info
+        )
+
+    conn.close()
+    return DevicePollResponse(status=status)
 
 # 14. Reset Sandbox
 @app.post("/api/reset")
