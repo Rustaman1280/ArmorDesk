@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate, Audio, staticFile } from "remotion";
 import { Rocket, ShieldCheck, Milestone, Package, Globe, Code2, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
+import { Premium3DShield } from "../components/Premium3DShield";
 
 export function Scene5Takeaways() {
   const frame = useCurrentFrame();
@@ -11,22 +12,29 @@ export function Scene5Takeaways() {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const cameraTranslateY = interpolate(frame, [0, 600, 1200], [8, -5, 0], {
+
+  // 2. Beat 1: Kinetic Opening (Frames 0 - 300)
+  const beat1Exit = interpolate(frame, [250, 300], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const word1 = spring({ frame: frame - 4, fps, config: { damping: 10, mass: 0.6 } });
+  const word2 = spring({ frame: frame - 16, fps, config: { damping: 10, mass: 0.6 } });
 
-  // 2. Kinetic Title Word Staggers
-  const title1 = spring({ frame: frame - 4, fps, config: { damping: 10, mass: 0.6 } });
-  const title2 = spring({ frame: frame - 14, fps, config: { damping: 10, mass: 0.6 } });
-  const title3 = spring({ frame: frame - 24, fps, config: { damping: 10, mass: 0.6 } });
+  // 3. Beat 2: Roadmap Cards Pop in One by One (Frames 280 - 780)
+  const beat2Entrance = spring({ frame: frame - 280, fps, config: { damping: 11, mass: 0.7 } });
+  const beat2Exit = interpolate(frame, [720, 780], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const road1 = spring({ frame: frame - 300, fps, config: { damping: 10, mass: 0.6 } });
+  const road2 = spring({ frame: frame - 430, fps, config: { damping: 10, mass: 0.6 } });
+  const road3 = spring({ frame: frame - 560, fps, config: { damping: 10, mass: 0.6 } });
 
-  // 3. Staggered Core Content Entrances
-  const leftColSpring = spring({ frame: frame - 40, fps, config: { damping: 12, mass: 0.8 } });
-  const rightColSpring = spring({ frame: frame - 60, fps, config: { damping: 12, mass: 0.8 } });
-  const bottomBarSpring = spring({ frame: frame - 80, fps, config: { damping: 11, mass: 0.7 } });
+  // 4. Beat 3: Grand Finale Outro (Frames 750 - 1200)
+  const beat3Entrance = spring({ frame: frame - 750, fps, config: { damping: 11, mass: 0.7 } });
 
-  // 4. Floating Ambient Glow Orbs
+  // Floating background ambient spotlights
   const orb1Y = Math.cos(frame * 0.035) * 35;
   const orb2X = Math.sin(frame * 0.035) * 40;
 
@@ -35,7 +43,7 @@ export function Scene5Takeaways() {
       style={{
         width: 1920,
         height: 1080,
-        transform: `scale(${cameraScale}) translateY(${cameraTranslateY}px)`,
+        transform: `scale(${cameraScale})`,
         transformOrigin: "center center",
       }}
       className="bg-[#FAFAFC] text-slate-900 overflow-hidden select-none font-sans"
@@ -64,210 +72,223 @@ export function Scene5Takeaways() {
       {/* Voiceover Audio */}
       <Audio src={staticFile("/voiceover/scene5_takeaways.mp3")} />
 
-      {/* FIXED 1920x1080 CONTENT CONTAINER */}
-      <div style={{ width: 1920, height: 1080, padding: 80 }} className="flex flex-col justify-between relative z-10">
-        {/* Top Header Bar */}
-        <div className="flex items-center justify-between border-b border-slate-200/80 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-mono text-xs font-extrabold tracking-widest flex items-center gap-2.5 shadow-sm">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
-              <span>05 / CONCLUSION &amp; ROADMAP</span>
-            </div>
-            <span className="text-xs font-mono text-slate-400 tracking-wider">
-              ARCHITECTURAL TAKEAWAYS &amp; PRODUCTION VISION
-            </span>
+      {/* BEAT 1: KINETIC STATEMENT (FRAMES 0 - 300) */}
+      {frame < 310 && (
+        <div
+          style={{ opacity: beat1Exit }}
+          className="absolute inset-0 flex flex-col items-center justify-center text-center p-20 z-20"
+        >
+          <div className="px-5 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-mono text-sm font-extrabold tracking-widest uppercase mb-6 shadow-sm flex items-center gap-2.5">
+            <span className="h-3 w-3 rounded-full bg-emerald-500 animate-ping" />
+            <span>05 / CORE ARCHITECTURAL TAKEAWAY</span>
           </div>
 
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-sm border border-slate-200 text-xs font-mono text-slate-700 font-bold">
-            <Sparkles className="h-4 w-4 text-emerald-500" />
-            <span>PRODUCTION-READY EXPERIMENTAL FLEET</span>
-          </div>
-        </div>
+          <div className="space-y-4 max-w-5xl">
+            <h1 className="text-8xl font-black font-mono tracking-tight text-slate-900 uppercase leading-none">
+              <span
+                style={{
+                  opacity: word1,
+                  transform: `translateY(${interpolate(word1, [0, 1], [50, 0])}px)`,
+                  display: "inline-block",
+                }}
+              >
+                Protocol-Level
+              </span>{" "}
+              <span
+                style={{
+                  opacity: word1,
+                  transform: `translateY(${interpolate(word1, [0, 1], [50, 0])}px)`,
+                  display: "inline-block",
+                }}
+                className="text-emerald-600 underline decoration-emerald-300 decoration-wavy decoration-2"
+              >
+                Defense
+              </span>
+            </h1>
 
-        {/* Giant Kinetic Headline: Staggered Words */}
-        <div className="space-y-2 mt-4">
-          <div className="flex items-center gap-4 text-6xl font-black font-mono tracking-tight text-slate-900 uppercase">
-            <span
+            <div
               style={{
-                opacity: title1,
-                transform: `translateY(${interpolate(title1, [0, 1], [40, 0])}px) scale(${interpolate(title1, [0, 1], [0.9, 1])})`,
-                display: "inline-block",
+                opacity: word2,
+                transform: `scale(${interpolate(word2, [0, 1], [0.85, 1])}) translateY(${interpolate(word2, [0, 1], [40, 0])}px)`,
               }}
-            >
-              Protocol-Level
-            </span>
-            <span
-              style={{
-                opacity: title2,
-                transform: `translateY(${interpolate(title2, [0, 1], [40, 0])}px) scale(${interpolate(title2, [0, 1], [0.9, 1])})`,
-                display: "inline-block",
-              }}
-              className="text-slate-800"
-            >
-              Defense
-            </span>
-            <span
-              style={{
-                opacity: title3,
-                transform: `translateY(${interpolate(title3, [0, 1], [40, 0])}px) scale(${interpolate(title3, [0, 1], [0.9, 1])})`,
-                display: "inline-block",
-              }}
-              className="text-emerald-600 underline decoration-emerald-300 decoration-wavy decoration-2"
+              className="text-6xl font-black font-mono text-slate-800 uppercase tracking-tight"
             >
               Over Prompt Engineering.
-            </span>
-          </div>
-
-          <p className="text-lg text-slate-500 font-sans max-w-4xl leading-relaxed">
-            True enterprise safety requires deterministic control at the transport layer. ArmorDesk proves that
-            autonomous AI agents can be governed with cryptographic intent verification and dual-control escrows.
-          </p>
-        </div>
-
-        {/* Center Stage: Takeaways vs Roadmap Milestones */}
-        <div className="grid grid-cols-12 gap-10 items-center my-auto">
-          {/* Left Column: 3 Architectural Takeaways (Span 6) */}
-          <div
-            style={{
-              opacity: leftColSpring,
-              transform: `translateX(${interpolate(leftColSpring, [0, 1], [-40, 0])}px)`,
-            }}
-            className="col-span-6 rounded-3xl bg-white shadow-[0_25px_60px_rgba(0,0,0,0.06)] border border-slate-200/90 p-8 space-y-5"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-slate-700" />
-                <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
-                  CORE ARCHITECTURAL TAKEAWAYS
-                </span>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-mono font-bold border border-emerald-200">
-                LESSONS LEARNED
-              </span>
             </div>
 
-            <div className="space-y-4">
-              {[
-                {
-                  num: "01",
-                  title: "Prompt Engineering Is Not Security",
-                  desc: "LLMs will inevitably follow adversarial data if unconstrained. True boundaries must be enforced deterministically at the MCP wire level.",
-                },
-                {
-                  num: "02",
-                  title: "Intent Anchoring via Plan Hashes",
-                  desc: "Freezing tool execution schemas into RFC 8785 hashes prevents runtime parameter drift and unauthorized recipient changes.",
-                },
-                {
-                  num: "03",
-                  title: "Frictionless Developer Adoption",
-                  desc: "Security works only when adopted: one-line curl install with RFC 8628 OAuth connects all local coding agents in seconds.",
-                },
-              ].map((t, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-start gap-4">
-                  <span className="font-mono font-extrabold text-sm text-emerald-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
-                    {t.num}
-                  </span>
-                  <div className="space-y-1 min-w-0">
-                    <h4 className="text-sm font-mono font-bold text-slate-900">{t.title}</h4>
-                    <p className="text-xs text-slate-500 font-sans leading-relaxed">{t.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column: What We Would Build Next (Span 6) */}
-          <div
-            style={{
-              opacity: rightColSpring,
-              transform: `translateX(${interpolate(rightColSpring, [0, 1], [40, 0])}px)`,
-            }}
-            className="col-span-6 rounded-3xl bg-white shadow-[0_25px_60px_rgba(0,0,0,0.06)] border border-slate-200/90 p-8 space-y-5"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <Milestone className="h-5 w-5 text-slate-700" />
-                <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
-                  WHAT WE WOULD BUILD NEXT (ROADMAP)
-                </span>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-cyan-50 text-cyan-700 text-xs font-mono font-bold border border-cyan-200">
-                FUTURE HORIZONS
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                {
-                  phase: "PHASE 2",
-                  title: "AWS Nitro Enclave HSM Escrows",
-                  desc: "Migrate escrow holding logic into Hardware Security Modules for cryptographic memory-level isolation against root compromises.",
-                },
-                {
-                  phase: "PHASE 3",
-                  title: "Multi-Agent Consensus Threshold Voting",
-                  desc: "Require m-of-n independent agent cryptographic signatures before executing high-value treasury disbursements.",
-                },
-                {
-                  phase: "PHASE 4",
-                  title: "LangGraph, CrewAI & AutoGen Middleware",
-                  desc: "Publish turnkey Python middleware packages so multi-agent framework developers gain zero-trust governance out of the box.",
-                },
-              ].map((r, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-mono font-bold text-slate-900">{r.title}</span>
-                    <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-white text-cyan-700 border border-slate-200 font-extrabold shadow-sm">
-                      {r.phase}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 font-sans leading-relaxed">{r.desc}</p>
-                </div>
-              ))}
-            </div>
+            <p className="text-2xl text-slate-500 font-sans pt-6 max-w-3xl mx-auto leading-relaxed">
+              Prompt engineering is not security. True enterprise safety requires deterministic control enforced at the
+              Model Context Protocol transport wire layer.
+            </p>
           </div>
         </div>
+      )}
 
-        {/* Bottom Bar: Links & Resources (3 Wide Cards) */}
+      {/* BEAT 2: WHAT WE WOULD BUILD NEXT (ROADMAP POPUPS ONE BY ONE) (FRAMES 270 - 780) */}
+      {frame >= 260 && frame < 790 && (
         <div
           style={{
-            opacity: bottomBarSpring,
-            transform: `translateY(${interpolate(bottomBarSpring, [0, 1], [30, 0])}px)`,
+            opacity: interpolate(beat2Entrance, [0, 1], [0, 1]) * beat2Exit,
+            transform: `scale(${interpolate(beat2Entrance, [0, 1], [0.92, 1])})`,
           }}
-          className="pt-6 border-t border-slate-200/80 grid grid-cols-3 gap-6"
+          className="absolute inset-0 flex flex-col justify-between p-20 z-20"
         >
-          <div className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200/90 flex items-center gap-4">
-            <Globe className="h-6 w-6 text-emerald-600 shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[11px] font-mono text-slate-400 block font-semibold">LIVE PLATFORM</span>
-              <span className="text-sm font-mono font-bold text-slate-900 truncate block">
-                https://armordesk.crusts.dev
-              </span>
+          <div className="text-center space-y-2">
+            <span className="px-4 py-1.5 rounded-full bg-cyan-50 text-cyan-700 font-mono text-xs font-extrabold tracking-widest uppercase border border-cyan-200">
+              FUTURE HORIZONS
+            </span>
+            <h2 className="text-6xl font-black font-mono text-slate-900 uppercase tracking-tight">
+              What We Would Build Next
+            </h2>
+          </div>
+
+          {/* 3 Sequential Roadmap Cards */}
+          <div className="grid grid-cols-3 gap-8 my-auto">
+            {/* Roadmap 1 */}
+            <div
+              style={{
+                opacity: road1,
+                transform: `scale(${interpolate(road1, [0, 1], [0.85, 1])}) translateY(${interpolate(road1, [0, 1], [40, 0])}px)`,
+              }}
+              className="rounded-3xl bg-white shadow-[0_30px_70px_rgba(0,0,0,0.07)] border-2 border-emerald-400 p-8 space-y-4 flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-mono text-xs font-bold border border-emerald-200">
+                  PHASE 2
+                </span>
+                <h3 className="text-2xl font-bold font-mono text-slate-900">
+                  AWS Nitro Enclaves HSM Escrows
+                </h3>
+                <p className="text-sm text-slate-500 font-sans leading-relaxed">
+                  Migrate escrow holding logic into Hardware Security Modules for cryptographic memory-level isolation
+                  even against root host compromises.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 text-slate-800 text-xs font-mono font-bold flex items-center justify-between">
+                <span>Hardware Memory Isolation</span>
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              </div>
+            </div>
+
+            {/* Roadmap 2 */}
+            <div
+              style={{
+                opacity: road2,
+                transform: `scale(${interpolate(road2, [0, 1], [0.85, 1])}) translateY(${interpolate(road2, [0, 1], [40, 0])}px)`,
+              }}
+              className="rounded-3xl bg-white shadow-[0_30px_70px_rgba(0,0,0,0.07)] border-2 border-cyan-400 p-8 space-y-4 flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <span className="px-3 py-1 rounded-full bg-cyan-50 text-cyan-700 font-mono text-xs font-bold border border-cyan-200">
+                  PHASE 3
+                </span>
+                <h3 className="text-2xl font-bold font-mono text-slate-900">
+                  Multi-Agent Consensus Threshold Voting
+                </h3>
+                <p className="text-sm text-slate-500 font-sans leading-relaxed">
+                  Require m-of-n independent agent cryptographic signatures before executing high-value corporate treasury
+                  disbursements.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 text-slate-800 text-xs font-mono font-bold flex items-center justify-between">
+                <span>3-of-5 Signature Consensus</span>
+                <Milestone className="h-4 w-4 text-cyan-600" />
+              </div>
+            </div>
+
+            {/* Roadmap 3 */}
+            <div
+              style={{
+                opacity: road3,
+                transform: `scale(${interpolate(road3, [0, 1], [0.85, 1])}) translateY(${interpolate(road3, [0, 1], [40, 0])}px)`,
+              }}
+              className="rounded-3xl bg-white shadow-[0_30px_70px_rgba(0,0,0,0.07)] border-2 border-violet-400 p-8 space-y-4 flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <span className="px-3 py-1 rounded-full bg-violet-50 text-violet-700 font-mono text-xs font-bold border border-violet-200">
+                  PHASE 4
+                </span>
+                <h3 className="text-2xl font-bold font-mono text-slate-900">
+                  LangGraph &amp; CrewAI Middleware
+                </h3>
+                <p className="text-sm text-slate-500 font-sans leading-relaxed">
+                  Publish turnkey Python middleware packages so multi-agent framework developers gain zero-trust
+                  governance out of the box.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 text-slate-800 text-xs font-mono font-bold flex items-center justify-between">
+                <span>Turnkey Python SDK</span>
+                <Package className="h-4 w-4 text-violet-600" />
+              </div>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200/90 flex items-center gap-4">
-            <Package className="h-6 w-6 text-cyan-600 shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[11px] font-mono text-slate-400 block font-semibold">OFFICIAL NPM PACKAGE</span>
-              <span className="text-sm font-mono font-bold text-slate-900 truncate block">
-                @crustdev/armordesk (v1.0.6)
-              </span>
+          <div className="text-center text-xs font-mono text-slate-400">
+            Next: Production Resources &amp; Live Deployment Links
+          </div>
+        </div>
+      )}
+
+      {/* BEAT 3: GRAND FINALE OUTRO STAGE (FRAMES 750 - 1200) */}
+      {frame >= 740 && (
+        <div
+          style={{
+            opacity: beat3Entrance,
+            transform: `scale(${interpolate(beat3Entrance, [0, 1], [0.92, 1])}) translateY(${interpolate(beat3Entrance, [0, 1], [40, 0])}px)`,
+          }}
+          className="absolute inset-0 flex flex-col items-center justify-center p-20 z-20 text-center space-y-8"
+        >
+          {/* 3D Shield Centerpiece */}
+          <div className="relative">
+            <Premium3DShield width={300} height={300} />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="h-44 w-44 rounded-full bg-emerald-400/25 filter blur-3xl animate-pulse" />
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200/90 flex items-center gap-4">
-            <Code2 className="h-6 w-6 text-slate-700 shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[11px] font-mono text-slate-400 block font-semibold">OPEN SOURCE CODEBASE</span>
-              <span className="text-sm font-mono font-bold text-slate-900 truncate block">
-                Rustaman1280/ArmorDesk
-              </span>
+          <div className="space-y-3 max-w-4xl">
+            <h2 className="text-6xl font-black font-mono text-slate-900 uppercase tracking-tight">
+              ArmorDesk: Governed MCP Gateway
+            </h2>
+            <p className="text-xl text-slate-500 font-sans leading-relaxed">
+              Protecting the autonomous agent economy with deterministic protocol-level zero trust.
+            </p>
+          </div>
+
+          {/* 3 Wide Link Cards */}
+          <div style={{ width: 1200 }} className="grid grid-cols-3 gap-6 font-mono text-left">
+            <div className="p-6 rounded-3xl bg-white shadow-xl border border-slate-200/90 flex items-center gap-4">
+              <Globe className="h-8 w-8 text-emerald-600 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-xs text-slate-400 block font-bold">LIVE PLATFORM</span>
+                <span className="text-base font-bold text-slate-900 truncate block">
+                  https://armordesk.crusts.dev
+                </span>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-white shadow-xl border border-slate-200/90 flex items-center gap-4">
+              <Package className="h-8 w-8 text-cyan-600 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-xs text-slate-400 block font-bold">OFFICIAL NPM PACKAGE</span>
+                <span className="text-base font-bold text-slate-900 truncate block">
+                  @crustdev/armordesk (v1.0.6)
+                </span>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-white shadow-xl border border-slate-200/90 flex items-center gap-4">
+              <Code2 className="h-8 w-8 text-slate-700 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-xs text-slate-400 block font-bold">OPEN SOURCE REPO</span>
+                <span className="text-base font-bold text-slate-900 truncate block">
+                  Rustaman1280/ArmorDesk
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </AbsoluteFill>
   );
 }

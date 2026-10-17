@@ -1,50 +1,48 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate, Audio, staticFile } from "remotion";
-import { Sliders, CheckCircle2, XCircle, Award, ExternalLink, Hash, FileCheck, ShieldAlert } from "lucide-react";
-import { MotionCanvasSlot } from "../components/MotionCanvasSlot";
+import { Sliders, CheckCircle2, XCircle, Award, ExternalLink, Hash, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { CinematicDemoBox } from "../components/CinematicDemoBox";
 
 export function Scene4ArmorIQ() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // 1. Camera Scale & Drift
-  const cameraScale = interpolate(frame, [0, 450, 900, 1350], [1.05, 1.0, 1.02, 1.0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const cameraTranslateY = interpolate(frame, [0, 700, 1350], [8, -5, 0], {
+  // Camera Drift
+  const cameraScale = interpolate(frame, [0, 600, 1350], [1.03, 1.0, 1.02], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // 2. Kinetic Title Word Staggers
-  const title1 = spring({ frame: frame - 4, fps, config: { damping: 10, mass: 0.6 } });
-  const title2 = spring({ frame: frame - 14, fps, config: { damping: 10, mass: 0.6 } });
-  const title3 = spring({ frame: frame - 24, fps, config: { damping: 10, mass: 0.6 } });
+  // Modal 1: Spend Limit (Frames 0 - 350)
+  const modal1In = spring({ frame: frame - 4, fps, config: { damping: 10, mass: 0.6 } });
+  const modal1Out = interpolate(frame, [300, 350], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  // 3. Staggered Rules & Certificate Cards
-  const leftColSpring = spring({ frame: frame - 40, fps, config: { damping: 12, mass: 0.8 } });
-  const certSpring = spring({ frame: frame - 90, fps, config: { damping: 10, mass: 0.7 } });
-  const canvasSlotSpring = spring({ frame: frame - 60, fps, config: { damping: 12, mass: 0.8 } });
+  // Modal 2: Vendor Whitelist (Frames 340 - 700)
+  const modal2In = spring({ frame: frame - 340, fps, config: { damping: 10, mass: 0.6 } });
+  const modal2Out = interpolate(frame, [650, 700], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  // 4. Floating Ambient Glow Orbs
+  // Modal 3: Intent Anchoring (Frames 690 - 1020)
+  const modal3In = spring({ frame: frame - 690, fps, config: { damping: 10, mass: 0.6 } });
+  const modal3Out = interpolate(frame, [970, 1020], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+
+  // Beat 4: Large Screen Recording Box (Frames 1000 - 1350)
+  const consoleEntrance = spring({ frame: frame - 1000, fps, config: { damping: 11, mass: 0.7 } });
+
+  // Floating background glow spotlights
   const orb1Y = Math.sin(frame * 0.035) * 35;
   const orb2X = Math.cos(frame * 0.035) * 40;
-
-  // 5. Interactive Rule Toggles (State changes at frame 110)
-  const ruleToggle = frame > 110;
 
   return (
     <AbsoluteFill
       style={{
         width: 1920,
         height: 1080,
-        transform: `scale(${cameraScale}) translateY(${cameraTranslateY}px)`,
+        transform: `scale(${cameraScale})`,
         transformOrigin: "center center",
       }}
-      className="bg-[#FAFAFC] text-slate-900 overflow-hidden select-none font-sans"
+      className="bg-[#FAFAFC] text-slate-900 overflow-hidden select-none font-sans flex flex-col justify-center items-center"
     >
-      {/* Background Kinetic Grid Lines */}
+      {/* Dynamic Background Grid Pattern */}
       <div
         className="absolute inset-0 opacity-40 pointer-events-none"
         style={{
@@ -68,209 +66,190 @@ export function Scene4ArmorIQ() {
       {/* Voiceover Audio */}
       <Audio src={staticFile("/voiceover/scene4_armoriq.mp3")} />
 
-      {/* FIXED 1920x1080 CONTENT CONTAINER */}
-      <div style={{ width: 1920, height: 1080, padding: 80 }} className="flex flex-col justify-between relative z-10">
-        {/* Top Header Bar */}
-        <div className="flex items-center justify-between border-b border-slate-200/80 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="px-4 py-1.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 font-mono text-xs font-extrabold tracking-widest flex items-center gap-2.5 shadow-sm">
-              <span className="h-2.5 w-2.5 rounded-full bg-violet-500 animate-ping" />
-              <span>04 / ARMORIQL POLICY STUDIO</span>
-            </div>
-            <span className="text-xs font-mono text-slate-400 tracking-wider">
-              tools.armoriq.ai CONSOLE GOVERNANCE
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-sm border border-slate-200 text-xs font-mono text-slate-700 font-bold">
-            <ExternalLink className="h-4 w-4 text-violet-500" />
-            <span>CONSOLE: tools.armoriq.ai</span>
-          </div>
+      {/* Top Floating Scene Tag */}
+      <div className="absolute top-8 left-12 z-30 flex items-center gap-3">
+        <div className="px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-800 font-mono text-xs font-bold tracking-widest flex items-center gap-2 shadow-sm">
+          <Sliders className="h-3.5 w-3.5 text-violet-600" />
+          <span>04 / ARMORIQL POLICY STUDIO : MODAL BEATS</span>
         </div>
+      </div>
 
-        {/* Giant Kinetic Headline: Staggered Words */}
-        <div className="space-y-2 mt-4">
-          <div className="flex items-center gap-4 text-6xl font-black font-mono tracking-tight text-slate-900 uppercase">
-            <span
-              style={{
-                opacity: title1,
-                transform: `translateY(${interpolate(title1, [0, 1], [40, 0])}px) scale(${interpolate(title1, [0, 1], [0.9, 1])})`,
-                display: "inline-block",
-              }}
-            >
-              ArmorIQ
+      {/* MODAL POPUP 1: SPEND LIMIT CEILING (FRAMES 0 - 350) */}
+      {frame < 360 && (
+        <div
+          style={{
+            opacity: interpolate(modal1In, [0, 1], [0, 1]) * modal1Out,
+            transform: `scale(${interpolate(modal1In, [0, 1], [0.85, 1])}) translateY(${interpolate(modal1In, [0, 1], [40, 0])}px)`,
+          }}
+          className="z-20 text-center space-y-6"
+        >
+          <div className="space-y-2">
+            <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-mono text-xs font-bold border border-emerald-200">
+              POLICY RULE 01
             </span>
-            <span
-              style={{
-                opacity: title2,
-                transform: `translateY(${interpolate(title2, [0, 1], [40, 0])}px) scale(${interpolate(title2, [0, 1], [0.9, 1])})`,
-                display: "inline-block",
-              }}
-              className="text-slate-800"
-            >
-              Console Rules:
-            </span>
-            <span
-              style={{
-                opacity: title3,
-                transform: `translateY(${interpolate(title3, [0, 1], [40, 0])}px) scale(${interpolate(title3, [0, 1], [0.9, 1])})`,
-                display: "inline-block",
-              }}
-              className="text-violet-600 underline decoration-violet-300 decoration-wavy decoration-2"
-            >
-              Deterministic Intent Anchoring.
-            </span>
+            <h2 className="text-6xl font-black font-mono text-slate-900 uppercase tracking-tight">
+              Spend Limit Ceiling ($50.00 USD)
+            </h2>
+            <p className="text-lg text-slate-500 max-w-xl mx-auto font-sans">
+              Autonomous execution allowed ONLY for micro-actions. All wire transfers &gt; $50 freeze in escrow.
+            </p>
           </div>
 
-          <p className="text-lg text-slate-500 font-sans max-w-4xl leading-relaxed">
-            Inside the ArmorIQ Policy Studio, we define attestation limits that anchor tool execution schemas into
-            cryptographic Plan Hashes, preventing runtime prompt tampering.
-          </p>
-        </div>
-
-        {/* Center Stage: Configured Rules Matrix vs Motion Canvas Slot */}
-        <div className="grid grid-cols-12 gap-10 items-center my-auto">
-          {/* Left Column: 3 Core Policy Rules & Certificate (Span 7) */}
           <div
-            style={{
-              opacity: leftColSpring,
-              transform: `translateX(${interpolate(leftColSpring, [0, 1], [-40, 0])}px)`,
-            }}
-            className="col-span-7 space-y-5"
+            style={{ width: 900 }}
+            className="p-8 rounded-3xl bg-white shadow-[0_30px_90px_rgba(0,0,0,0.08)] border-2 border-emerald-400 mx-auto grid grid-cols-2 gap-6 text-left font-mono"
           >
-            {/* Rules Matrix */}
-            <div className="rounded-3xl bg-white shadow-[0_25px_60px_rgba(0,0,0,0.06)] border border-slate-200/90 p-7 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <Sliders className="h-5 w-5 text-slate-700" />
-                  <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
-                    POLICY STUDIO RULES DEFINITION
-                  </span>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-mono font-bold border border-violet-200">
-                  tools.armoriq.ai
-                </span>
+            <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <span>Micro-Refunds (&lt;= $50)</span>
               </div>
-
-              <div className="space-y-3 font-mono">
-                {/* Rule 1: Spend Limit */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900">
-                      Rule 1: spend_limit_ceiling ($50.00 USD)
-                    </span>
-                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                      ESCROW GATE
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <span className="text-emerald-700 flex items-center gap-2 font-semibold">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                      Allowed: Micro-refunds &lt;= $50.00
-                    </span>
-                    <span className="text-rose-700 flex items-center gap-2 font-semibold">
-                      <XCircle className="h-4 w-4 shrink-0 text-rose-500" />
-                      Blocked: Autonomous wire transfers &gt; $50.00
-                    </span>
-                  </div>
-                </div>
-
-                {/* Rule 2: Whitelist CRM */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900">
-                      Rule 2: vendor_crm_whitelist
-                    </span>
-                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold">
-                      BENEFICIARY
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <span className="text-emerald-700 flex items-center gap-2 font-semibold">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                      Allowed: Verified vendor allowlist
-                    </span>
-                    <span className="text-rose-700 flex items-center gap-2 font-semibold">
-                      <XCircle className="h-4 w-4 shrink-0 text-rose-500" />
-                      Blocked: Unvetted offshore transit accounts
-                    </span>
-                  </div>
-                </div>
-
-                {/* Rule 3: Intent Anchoring */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900">
-                      Rule 3: plan_hash_attestation
-                    </span>
-                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 font-bold">
-                      RFC 8785 HASH
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <span className="text-emerald-700 flex items-center gap-2 font-semibold">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                      SHA-256 Plan Hash matching spec
-                    </span>
-                    <span className="text-rose-700 flex items-center gap-2 font-semibold">
-                      <XCircle className="h-4 w-4 shrink-0 text-rose-500" />
-                      Prevents runtime parameter tampering
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-slate-600 font-sans">
+                Passes automatically in 14ms without manual intervention.
+              </p>
             </div>
-
-            {/* Cryptographic Certificate Card */}
-            <div
-              style={{
-                opacity: certSpring,
-                transform: `scale(${interpolate(certSpring, [0, 1], [0.95, 1])})`,
-              }}
-              className="p-5 rounded-3xl bg-slate-900 text-white shadow-2xl flex items-center justify-between font-mono text-xs border border-slate-800"
-            >
-              <div className="flex items-center gap-4">
-                <Award className="h-6 w-6 text-emerald-400 shrink-0" />
-                <div>
-                  <span className="text-slate-400 text-[10px] block font-semibold">
-                    IMMUTABLE CRYPTOGRAPHIC AUDIT CERTIFICATE
-                  </span>
-                  <span className="text-emerald-300 font-bold text-sm">
-                    Receipt rcpt_5b521f1f (Merkle Root Verified)
-                  </span>
-                </div>
+            <div className="p-5 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-2">
+              <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
+                <XCircle className="h-5 w-5 text-rose-600" />
+                <span>Large Disbursements (&gt; $50)</span>
               </div>
-              <span className="text-[11px] px-3.5 py-1.5 rounded-full bg-slate-800 text-cyan-300 border border-white/10 font-bold">
-                OFFLINE INDEPENDENT PROOF
+              <p className="text-xs text-slate-600 font-sans">
+                Instantly frozen into Dual-Control Escrow awaiting human approval.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL POPUP 2: VENDOR ALLOWLIST CHECK (FRAMES 340 - 700) */}
+      {frame >= 330 && frame < 710 && (
+        <div
+          style={{
+            opacity: interpolate(modal2In, [0, 1], [0, 1]) * modal2Out,
+            transform: `scale(${interpolate(modal2In, [0, 1], [0.85, 1])}) translateY(${interpolate(modal2In, [0, 1], [40, 0])}px)`,
+          }}
+          className="z-20 text-center space-y-6"
+        >
+          <div className="space-y-2">
+            <span className="px-4 py-1.5 rounded-full bg-cyan-50 text-cyan-700 font-mono text-xs font-bold border border-cyan-200">
+              POLICY RULE 02
+            </span>
+            <h2 className="text-6xl font-black font-mono text-slate-900 uppercase tracking-tight">
+              Vendor CRM Allowlist Check
+            </h2>
+            <p className="text-lg text-slate-500 max-w-xl mx-auto font-sans">
+              All payment beneficiaries must match verified corporate supplier records.
+            </p>
+          </div>
+
+          <div
+            style={{ width: 900 }}
+            className="p-8 rounded-3xl bg-white shadow-[0_30px_90px_rgba(0,0,0,0.08)] border-2 border-cyan-400 mx-auto grid grid-cols-2 gap-6 text-left font-mono"
+          >
+            <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <span>Allowlisted CRM Vendors</span>
+              </div>
+              <p className="text-xs text-slate-600 font-sans">
+                Matching verified routing accounts proceed to policy evaluation.
+              </p>
+            </div>
+            <div className="p-5 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-2">
+              <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
+                <XCircle className="h-5 w-5 text-rose-600" />
+                <span>Rogue Injected Accounts</span>
+              </div>
+              <p className="text-xs text-slate-600 font-sans">
+                Unvetted transit routing numbers are intercepted and blocked immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL POPUP 3: INTENT ANCHORING & MERKLE PROOF (FRAMES 690 - 1020) */}
+      {frame >= 680 && frame < 1030 && (
+        <div
+          style={{
+            opacity: interpolate(modal3In, [0, 1], [0, 1]) * modal3Out,
+            transform: `scale(${interpolate(modal3In, [0, 1], [0.85, 1])}) translateY(${interpolate(modal3In, [0, 1], [40, 0])}px)`,
+          }}
+          className="z-20 text-center space-y-6"
+        >
+          <div className="space-y-2">
+            <span className="px-4 py-1.5 rounded-full bg-violet-50 text-violet-700 font-mono text-xs font-bold border border-violet-200">
+              POLICY RULE 03
+            </span>
+            <h2 className="text-6xl font-black font-mono text-slate-900 uppercase tracking-tight">
+              Cryptographic Intent Anchoring
+            </h2>
+            <p className="text-lg text-slate-500 max-w-xl mx-auto font-sans">
+              RFC 8785 canonical JSON produces a SHA-256 Plan Hash and Merkle proof.
+            </p>
+          </div>
+
+          <div
+            style={{ width: 950 }}
+            className="p-8 rounded-3xl bg-slate-900 text-white shadow-2xl border border-slate-800 mx-auto space-y-4 text-left font-mono"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <span className="text-emerald-400 font-bold text-sm flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                <span>VERIFIABLE AUDIT CERTIFICATE : rcpt_5b521f1f</span>
+              </span>
+              <span className="text-[11px] text-cyan-300 px-3 py-1 rounded-full bg-slate-800 border border-white/10 font-bold">
+                OFFLINE PROOF
               </span>
             </div>
-          </div>
 
-          {/* Right Column: Studio Motion Canvas Display Mockup (Span 5) */}
-          <div
-            style={{
-              opacity: canvasSlotSpring,
-              transform: `translateX(${interpolate(canvasSlotSpring, [0, 1], [40, 0])}px)`,
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-black/60 border border-white/5 space-y-1">
+                <span className="text-slate-400 block">SHA-256 PLAN HASH:</span>
+                <span className="text-emerald-300 font-bold block truncate">
+                  7f9b8a1c3d2e...4c1e
+                </span>
+              </div>
+              <div className="p-4 rounded-xl bg-black/60 border border-white/5 space-y-1">
+                <span className="text-slate-400 block">MERKLE TREE ROOT:</span>
+                <span className="text-cyan-300 font-bold block truncate">
+                  d4e5f6a7b8c9...9a8b
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BEAT 4: CINEMATIC SCREEN RECORDING BOX (FRAMES 1000 - 1350) */}
+      {frame >= 990 && (
+        <div
+          style={{
+            opacity: consoleEntrance,
+            transform: `scale(${interpolate(consoleEntrance, [0, 1], [0.94, 1])})`,
+          }}
+          className="z-20 w-full flex items-center justify-center"
+        >
+          <CinematicDemoBox
+            slotId="slot_03_armoriq_console"
+            title="Live Screen Recording: tools.armoriq.ai Console"
+            subtitle="Full-screen video of your actual ArmorIQ Console showing the Policy Studio and active governance rules."
+            activeBadge={{
+              emoji: "🛡️",
+              text: "ARMORIQL CONSOLE : LIVE ATTESTATION RULES",
+              color: "violet",
             }}
-            className="col-span-5"
-          >
-            <MotionCanvasSlot
-              slotId="slot_03_armoriq_console"
-              title="ArmorIQ Policy Studio Console"
-              subtitle="Drop your live screen recording of tools.armoriq.ai showing active policy definitions and attestation receipts."
-              badge="CANVAS SLOT 3"
-              accentColor="violet"
-              className="h-[380px]"
-            />
-          </div>
+          />
         </div>
+      )}
 
-        {/* Bottom Floating Bar */}
-        <div className="pt-6 border-t border-slate-200/80 flex items-center justify-between text-xs font-mono text-slate-500">
-          <span>ArmorIQ SDK Pro Integration : Staging &amp; Production API</span>
-          <span>Independent Offline Cryptographic Receipt Verification</span>
-          <span>https://tools.armoriq.ai</span>
-        </div>
+      {/* Bottom Floating Info Pill */}
+      <div className="absolute bottom-6 z-30 px-6 py-2 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm text-xs font-mono text-slate-600 flex items-center gap-4">
+        <span>Integrated via ArmorIQ SDK Pro</span>
+        <span>•</span>
+        <span className="text-violet-700 font-bold">tools.armoriq.ai Policy Studio</span>
+        <span>•</span>
+        <span>Independent offline Merkle verification</span>
       </div>
     </AbsoluteFill>
   );
