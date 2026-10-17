@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query, Path as FPath, Response
+from fastapi import FastAPI, HTTPException, Query, Path as FPath, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db, get_connection
@@ -725,6 +725,47 @@ print(result)  # Automatically frozen in ArmorDesk Approval Inbox if > $50!'''
     }}
   }}' '''
 
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM connected_agents WHERE tenant_id = ? ORDER BY is_simulated ASC, created_at DESC",
+        (tenant_id,)
+    )
+    rows = cur.fetchall()
+
+    if tenant_id == "acme-corp" and len(rows) == 0:
+        now = datetime.now(timezone.utc).isoformat()
+        sample_agents = [
+            ("agent-finops-orchestrator", "acme-corp", "FinOps Orchestrator", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["plan_capture", "delegate"]), "core_orchestration", "ArmorIQ Canonical Plan Hash", "Active (0s ago)", 1, now),
+            ("agent-invoice-reader", "acme-corp", "Invoice Reader Agent", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["email.read_inbox", "files.parse_invoice"]), "sandbox_email_parser", "Read-Only Sandbox (No Bank Tools)", "Active (1s ago)", 1, now),
+            ("agent-vendor-verifier", "acme-corp", "CRM Vendor Verifier", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["crm.verify_vendor"]), "sandbox_crm", "CRM Allowlist Enforcement", "Active (2s ago)", 1, now),
+            ("agent-bank-executor", "acme-corp", "Bank Disbursement Executor", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["bank.wire_transfer", "bank.refund"]), "sandbox_bank", "Dual-Control Approval ($50.00 Threshold)", "Active (0s ago)", 1, now)
+        ]
+        cur.executemany("INSERT OR REPLACE INTO connected_agents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", sample_agents)
+        conn.commit()
+        cur.execute("SELECT * FROM connected_agents WHERE tenant_id = ?", (tenant_id,))
+        rows = cur.fetchall()
+
+    agents_list = []
+    for r in rows:
+        caps = []
+        try:
+            caps = json.loads(r["capabilities"])
+        except Exception:
+            caps = []
+        agents_list.append({
+            "agent_id": r["agent_id"],
+            "name": r["name"],
+            "transport": r["transport"],
+            "status": r["status"],
+            "capabilities": caps,
+            "assigned_sandbox": r["assigned_sandbox"],
+            "enforced_policy": r["enforced_policy"],
+            "last_heartbeat": r["last_heartbeat"],
+            "is_simulated": bool(r["is_simulated"] if "is_simulated" in r.keys() else 0)
+        })
+    conn.close()
+
     return MCPGatewayInfo(
         gateway_url=f"{backend_base}/api/mcp/gateway",
         sse_url=f"{backend_base}/api/mcp/sse",
@@ -732,7 +773,7 @@ print(result)  # Automatically frozen in ArmorDesk Approval Inbox if > $50!'''
         tenant_id=tenant_id,
         api_key_masked="ak_live_acme_corpx892348a",
         governed_tools=[MCPToolDefinition(**t) for t in GOVERNED_MCP_TOOLS],
-        connected_agents=CONNECTED_AGENTS_FLEET,
+        connected_agents=agents_list,
         sample_configs={
             "claude_desktop": json.dumps(claude_cfg, indent=2),
             "cursor": json.dumps(cursor_cfg, indent=2),
@@ -742,7 +783,34 @@ print(result)  # Automatically frozen in ArmorDesk Approval Inbox if > $50!'''
     )
 
 @app.post("/api/mcp/ping")
-def ping_mcp_gateway():
+def ping_mcp_gateway(request: Request, tenant_id: Optional[str] = Query(None)):
+    tid = request.headers.get("X-ArmorIQ-Tenant") or tenant_id or "acme-corp"
+    user_agent = request.headers.get("User-Agent") or "Generic MCP Agent"
+    
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        now = datetime.now(timezone.utc).isoformat()
+        agent_id = f"cli-{tid}"
+        name = "ArmorDesk CLI Agent" if "@crustdev/armordesk" in user_agent or "node" in user_agent.lower() else (f"Agent ({user_agent[:24]})" if "curl" not in user_agent.lower() else "MCP cURL Client")
+        cur.execute("""
+            INSERT INTO connected_agents (
+                agent_id, tenant_id, name, transport, status, capabilities,
+                assigned_sandbox, enforced_policy, last_heartbeat, is_simulated, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+            ON CONFLICT(agent_id) DO UPDATE SET
+                last_heartbeat = 'Active (just now)',
+                status = 'CONNECTED'
+        """, (
+            agent_id, tid, name, "MCP JSON-RPC 2.0 (HTTP/SSE)",
+            "CONNECTED", json.dumps(["mcp.ping", "mcp.inspect", "receipt.verify"]),
+            "client_workstation", "Local Account Scoped", "Active (just now)", now
+        ))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
     return {
         "status": "CONNECTED",
         "gateway": "ArmorDesk Governed MCP Gateway",
@@ -753,6 +821,31 @@ def ping_mcp_gateway():
         "active_sandboxes": ["bank", "crm", "email_files"],
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
+
+@app.post("/api/tenants/{tenant_id}/seed-demo-fleet")
+def seed_tenant_demo_fleet(tenant_id: str = FPath(...)):
+    conn = get_connection()
+    cur = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    sample_agents = [
+        (f"agent-finops-{tenant_id}", tenant_id, "FinOps Orchestrator", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["plan_capture", "delegate"]), "core_orchestration", "ArmorIQ Canonical Plan Hash", "Active (0s ago)", 1, now),
+        (f"agent-invoice-{tenant_id}", tenant_id, "Invoice Reader Agent", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["email.read_inbox", "files.parse_invoice"]), "sandbox_email_parser", "Read-Only Sandbox (No Bank Tools)", "Active (1s ago)", 1, now),
+        (f"agent-crm-{tenant_id}", tenant_id, "CRM Vendor Verifier", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["crm.verify_vendor"]), "sandbox_crm", "CRM Allowlist Enforcement", "Active (2s ago)", 1, now),
+        (f"agent-bank-{tenant_id}", tenant_id, "Bank Disbursement Executor", "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED", json.dumps(["bank.wire_transfer", "bank.refund"]), "sandbox_bank", "Dual-Control Approval ($50.00 Threshold)", "Active (0s ago)", 1, now)
+    ]
+    cur.executemany("INSERT OR REPLACE INTO connected_agents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", sample_agents)
+    conn.commit()
+    conn.close()
+    return {"status": "SEEDED", "tenant_id": tenant_id, "count": len(sample_agents)}
+
+@app.post("/api/tenants/{tenant_id}/clear-demo-fleet")
+def clear_tenant_demo_fleet(tenant_id: str = FPath(...)):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM connected_agents WHERE tenant_id = ? AND is_simulated = 1", (tenant_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "CLEARED", "tenant_id": tenant_id}
 
 @app.post("/api/mcp/gateway")
 async def mcp_jsonrpc_gateway(payload: Dict[str, Any]):

@@ -167,6 +167,20 @@ def init_db(reset: bool = False):
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS connected_agents (
+            agent_id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            transport TEXT NOT NULL,
+            status TEXT NOT NULL,
+            capabilities TEXT NOT NULL,
+            assigned_sandbox TEXT NOT NULL,
+            enforced_policy TEXT NOT NULL,
+            last_heartbeat TEXT NOT NULL,
+            is_simulated INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        );
     """)
 
     # Seed data if empty
@@ -326,3 +340,32 @@ def seed_data(conn: sqlite3.Connection):
         )
     ]
     cur.executemany("INSERT INTO ctf_submissions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", sample_ctf)
+
+    # Seed simulated demo agents for acme-corp (Demo Sandbox Only)
+    sample_agents = [
+        (
+            "agent-finops-orchestrator", "acme-corp", "FinOps Orchestrator",
+            "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED",
+            json.dumps(["plan_capture", "delegate"]), "core_orchestration",
+            "ArmorIQ Canonical Plan Hash", "Active (0s ago)", 1, now
+        ),
+        (
+            "agent-invoice-reader", "acme-corp", "Invoice Reader Agent",
+            "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED",
+            json.dumps(["email.read_inbox", "files.parse_invoice"]), "sandbox_email_parser",
+            "Read-Only Sandbox (No Bank Tools)", "Active (1s ago)", 1, now
+        ),
+        (
+            "agent-vendor-verifier", "acme-corp", "CRM Vendor Verifier",
+            "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED",
+            json.dumps(["crm.verify_vendor"]), "sandbox_crm",
+            "CRM Allowlist Enforcement", "Active (2s ago)", 1, now
+        ),
+        (
+            "agent-bank-executor", "acme-corp", "Bank Disbursement Executor",
+            "MCP JSON-RPC 2.0 (HTTP/SSE)", "CONNECTED",
+            json.dumps(["bank.wire_transfer", "bank.refund"]), "sandbox_bank",
+            "Dual-Control Approval ($50.00 Threshold)", "Active (0s ago)", 1, now
+        )
+    ]
+    cur.executemany("INSERT OR REPLACE INTO connected_agents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", sample_agents)

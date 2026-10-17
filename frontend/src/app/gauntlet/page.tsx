@@ -211,6 +211,18 @@ export default function GauntletPage() {
         </div>
       </div>
 
+      {/* Human-Friendly Explainer Banner */}
+      <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-500/25 bg-rose-50/70 dark:bg-rose-950/20 text-xs text-slate-800 dark:text-zinc-200 space-y-2">
+        <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+          <HelpCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+          <span>Apa itu Prompt Gauntlet & Mengapa Fitur Ini Ada?</span>
+        </div>
+        <p className="leading-relaxed text-slate-600 dark:text-zinc-300 text-[11px] font-sans">
+          Ketika AI Agent diberi akses ke tools nyata (transfer bank, email, CRM), penyerang bisa menyusupkan instruksi berbahaya (Prompt Injection) untuk membajak agent agar mencuri uang atau membocorkan data.
+          <strong> Prompt Gauntlet</strong> adalah arena uji keamanan untuk membuktikan bahwa sekalipun LLM tertipu oleh teks jahat, <strong>ArmorDesk tetap mencegat eksekusi di level protokol</strong> sehingga dana dan data perusahaan tetap 100% aman.
+        </p>
+      </div>
+
       {/* ========================================================================= */}
       {/* VIEW 1: ATTACK DIFF SIMULATION (Split Screen) */}
       {/* ========================================================================= */}

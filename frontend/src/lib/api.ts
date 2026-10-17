@@ -274,6 +274,20 @@ export const api = {
     return res.json();
   },
 
+  async seedDemoFleet(tenantId: string) {
+    const res = await fetch(`${API_BASE}/tenants/${tenantId}/seed-demo-fleet`, {
+      method: "POST"
+    });
+    return res.json();
+  },
+
+  async clearDemoFleet(tenantId: string) {
+    const res = await fetch(`${API_BASE}/tenants/${tenantId}/clear-demo-fleet`, {
+      method: "POST"
+    });
+    return res.json();
+  },
+
   async pingMCPGateway() {
     const res = await fetch(`${API_BASE}/mcp/ping`, {
       method: "POST",

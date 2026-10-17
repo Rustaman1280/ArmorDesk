@@ -47,8 +47,11 @@ export default function DashboardPage() {
     pendingApprovalsCount,
   } = useApp();
 
+  const isDemoWorkspace = tenantId === "acme-corp" || tenantId === "globex-inc";
+
   const [traces, setTraces] = useState<TraceItem[]>([]);
   const [balance, setBalance] = useState<number>(0);
+  const [connectedAgents, setConnectedAgents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [traceFilter, setTraceFilter] = useState<string>("ALL");
   const [expandedTraceId, setExpandedTraceId] = useState<string | null>(null);
@@ -60,16 +63,38 @@ export default function DashboardPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [tData, bData] = await Promise.all([
+      const [tData, bData, mcpData] = await Promise.all([
         api.getTraces(tenantId),
         api.getBankBalance(tenantId),
+        api.getMCPConfig(tenantId),
       ]);
       setTraces(tData);
       setBalance(bData.balance || 0);
+      setConnectedAgents(mcpData?.connected_agents || []);
     } catch (e) {
       console.error(e);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSeedDemoFleet = async () => {
+    try {
+      await api.seedDemoFleet(tenantId);
+      addToast("Demo Fleet Loaded", "Simulated FinOps agents seeded for testing.", "success");
+      await loadData();
+    } catch (e: any) {
+      addToast("Failed to Seed Fleet", e.message, "error");
+    }
+  };
+
+  const handleClearDemoFleet = async () => {
+    try {
+      await api.clearDemoFleet(tenantId);
+      addToast("Fleet Cleared", "Simulated demo agents removed from workspace.", "info");
+      await loadData();
+    } catch (e: any) {
+      addToast("Failed to Clear Fleet", e.message, "error");
     }
   };
 
@@ -122,36 +147,65 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. Quick Connect & Gateway Callout Banner */}
-      <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-[#0E0F12] dark:via-[#121317] dark:to-[#0E0F12] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-            <Radio className="h-4 w-4 animate-pulse" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>ArmorDesk Model Context Protocol (MCP) Gateway Active</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
-                JSON-RPC 2.0
-              </span>
+      {/* 2. Mode Context & Gateway Callout Banner */}
+      {isDemoWorkspace ? (
+        <div className="p-4 rounded-xl border border-amber-500/25 bg-amber-500/10 text-xs font-mono text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+              <Sparkles className="h-4 w-4 animate-pulse" />
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 flex flex-wrap items-center gap-1.5">
-              <span>Endpoint:</span>
-              <code className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">https://armordesk.crusts.dev/api/mcp/gateway</code>
-              <span>· Quick installer:</span>
-              <code className="font-mono text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">curl -fsSL https://armordesk.crusts.dev/install.sh | bash</code>
-            </p>
+            <div>
+              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Interactive Demo Sandbox ({currentTenant?.name || "Acme Corp"})</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                  SIMULATION MODE
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-zinc-300 mt-0.5">
+                You are testing simulated scenarios with pre-seeded sample data. To connect your own real AI agents, register a clean workspace.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <Link
-          href="/connect"
-          className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-mono shrink-0"
-        >
-          <span>View Gateway Keys & Configs</span>
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-      </div>
+          <Link
+            href="/register"
+            className="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all font-mono shrink-0"
+          >
+            <span>Create Clean Workspace</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      ) : (
+        <div className="p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-xs font-mono text-emerald-900 dark:text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Live Organization Workspace: {currentTenant?.name || tenantId}</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                  LIVE WORKSPACE
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-zinc-300 mt-0.5 flex flex-wrap items-center gap-1.5">
+                <span>Gateway Endpoint:</span>
+                <code className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">https://armordesk.crusts.dev/api/mcp/gateway</code>
+                <span>· Quick install:</span>
+                <code className="font-mono bg-white/40 dark:bg-zinc-800/60 px-1 py-0.5 rounded">curl -fsSL https://armordesk.crusts.dev/install.sh | bash</code>
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/connect"
+            className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all font-mono shrink-0"
+          >
+            <span>Connect Local Agent</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* 3. Three Clean Executive KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -167,8 +221,33 @@ export default function DashboardPage() {
             ${balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/[0.04]">
-            <span>Tenant: {currentTenant?.name || "Acme Corp"}</span>
+            <span>Tenant: {currentTenant?.name || tenantId}</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">0.00% Loss</span>
+          </div>
+        </div>
+
+        {/* Fleet KPI Card */}
+        <div className="p-5 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0E0F12] shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 uppercase tracking-wide font-semibold">
+              CONNECTED MCP AGENTS
+            </span>
+            <Link
+              href="/connect"
+              className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-mono"
+            >
+              <span>Manage</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+            {connectedAgents.length} {connectedAgents.length === 1 ? "Agent" : "Agents"}
+          </div>
+          <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/[0.04]">
+            <span>{isDemoWorkspace ? "Simulated FinOps Fleet" : connectedAgents.length === 0 ? "Awaiting first agent" : "Live Fleet Active"}</span>
+            <span className={`font-semibold font-mono ${connectedAgents.length > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"}`}>
+              {connectedAgents.length > 0 ? "Protected" : "0 Active"}
+            </span>
           </div>
         </div>
 
@@ -194,29 +273,6 @@ export default function DashboardPage() {
             <span className="text-slate-400 font-mono text-[11px]">Requires CFO Signature</span>
           </div>
         </div>
-
-        {/* Cryptographic Proofs Card */}
-        <div className="p-5 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0E0F12] shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 uppercase tracking-wide font-semibold">
-              CRYPTOGRAPHIC NON-REPUDIATION
-            </span>
-            <Link
-              href="/receipts"
-              className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-mono"
-            >
-              <span>Receipts</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
-            100% Governed
-          </div>
-          <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/[0.04]">
-            <span>SHA-256 Plan Hashes</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">SOC 2 / ISO Ready</span>
-          </div>
-        </div>
       </div>
 
       {/* 4. Governed Multi-Agent Fleet Topology */}
@@ -231,80 +287,80 @@ export default function DashboardPage() {
               Autonomous sub-agents execute inside cryptographically bounded capability perimeters. Reader agents cannot initiate transfers; disbursements freeze for human review.
             </p>
           </div>
-          <Link
-            href="/connect"
-            className="text-xs font-mono font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 shrink-0"
-          >
-            <span>Manage Agent Capabilities</span>
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          {/* Agent 1 */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900 dark:text-white">1. Orchestrator</span>
-              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                ACTIVE
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
-              Coordinates incoming intent goals, computes SHA-256 Plan Hashes, and delegates scoped tokens.
-            </p>
-            <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-              Scope: [plan_capture, delegate]
-            </div>
-          </div>
-
-          {/* Agent 2 */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900 dark:text-white">2. ReaderAgent</span>
-              <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
-                SANDBOXED
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
-              Reads inbound emails & parses vendor PDFs. Strictly isolated from all payment & CRM mutation APIs.
-            </p>
-            <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-              Scope: [email.read, files.parse]
-            </div>
-          </div>
-
-          {/* Agent 3 */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900 dark:text-white">3. VerifierAgent</span>
-              <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-                ALLOWLIST
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
-              Cross-references recipient accounts against official CRM registry. Rejects unregistered offshore accounts.
-            </p>
-            <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-              Scope: [crm.verify_vendor]
-            </div>
-          </div>
-
-          {/* Agent 4 */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900 dark:text-white">4. ExecutorAgent</span>
-              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                SETTLEMENT
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
-              Executes permitted refunds (&le;$50) or routes high-value invoices to Approval Inbox escrow.
-            </p>
-            <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-              Scope: [bank.wire, bank.refund]
-            </div>
+          <div className="flex items-center gap-3">
+            {connectedAgents.some((ag: any) => ag.is_simulated) && !isDemoWorkspace && (
+              <button
+                onClick={handleClearDemoFleet}
+                className="text-xs font-mono text-rose-600 dark:text-rose-400 hover:underline"
+              >
+                Clear Demo Fleet
+              </button>
+            )}
+            <Link
+              href="/connect"
+              className="text-xs font-mono font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 shrink-0"
+            >
+              <span>Manage Agent Capabilities</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
+
+        {connectedAgents.length === 0 ? (
+          <div className="p-10 text-center space-y-4">
+            <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center mx-auto border border-slate-200 dark:border-white/10">
+              <Plug className="h-6 w-6 text-slate-400 dark:text-zinc-500" />
+            </div>
+            <div className="max-w-lg mx-auto space-y-1.5">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                No External AI Agents Connected Yet
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed font-sans">
+                This is a fresh, clean workspace for <strong className="text-slate-800 dark:text-zinc-200">{currentTenant?.name || tenantId}</strong>. No agents are connected to your gateway yet. You can connect your local tools, or load our simulated FinOps fleet to test the dashboard.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <Link
+                href="/connect"
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-2 shadow-sm font-mono"
+              >
+                <Plug className="h-3.5 w-3.5" />
+                <span>Connect Local Agent (CLI / Claude / Cursor)</span>
+              </Link>
+              <button
+                onClick={handleSeedDemoFleet}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-[#181920] hover:bg-slate-200 text-slate-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-2 font-mono transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <span>Load Simulated Demo Fleet</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
+            {connectedAgents.map((ag: any, idx: number) => (
+              <div key={ag.agent_id || idx} className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white truncate" title={ag.name}>{ag.name}</span>
+                  <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                    ag.is_simulated
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  }`}>
+                    {ag.is_simulated ? "SIMULATED" : "LIVE AGENT"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed font-sans">
+                  Sandbox: <code className="text-slate-700 dark:text-zinc-300 font-mono text-[10px]">{ag.assigned_sandbox}</code>
+                </p>
+                <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] text-[10px] font-mono text-slate-500 dark:text-zinc-400 flex items-center justify-between">
+                  <span className="truncate">{ag.last_heartbeat}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">ONLINE</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 5. Live Governed Ingestion Stream (Real Audit Ledger) */}

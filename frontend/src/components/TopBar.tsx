@@ -80,6 +80,19 @@ export function TopBar() {
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           <span>Policy: DETERMINISTIC</span>
         </div>
+
+        {/* Workspace Mode Indicator */}
+        {(tenantId === "acme-corp" || tenantId === "globex-inc") ? (
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-mono font-bold">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            <span>DEMO SIMULATION</span>
+          </div>
+        ) : (
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono font-bold">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>LIVE WORKSPACE</span>
+          </div>
+        )}
       </div>
 
       {/* Right: Controls & Context Switchers */}

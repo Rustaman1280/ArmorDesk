@@ -196,9 +196,9 @@ export function Sidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400">
             <Radio className="h-3 w-3 text-emerald-600 dark:text-emerald-400 animate-pulse" />
-            <span>MCP NODES</span>
+            <span>SERVER TOOL SANDBOXES</span>
           </div>
-          <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">ONLINE</span>
+          <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">READY</span>
         </div>
 
         <div className="space-y-1.5 text-[11px] font-mono">

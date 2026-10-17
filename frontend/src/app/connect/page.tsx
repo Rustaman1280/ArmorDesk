@@ -461,7 +461,7 @@ npx @crustdev/armordesk scenario 1`
             </p>
           </div>
           <span className="text-xs font-mono font-semibold px-2 py-1 rounded bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
-            {mcpConfig?.connected_agents?.length || 4} Active Agents
+            {mcpConfig?.connected_agents?.length ?? 0} Connected Agents
           </span>
         </div>
 
@@ -473,39 +473,67 @@ npx @crustdev/armordesk scenario 1`
                 <th className="py-3 px-5">TRANSPORT PROTOCOL</th>
                 <th className="py-3 px-5">ALLOWED CAPABILITIES</th>
                 <th className="py-3 px-5">ENFORCED POLICY</th>
-                <th className="py-3 px-5">HEARTBEAT</th>
+                <th className="py-3 px-5">STATUS & HEARTBEAT</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
-              {(mcpConfig?.connected_agents || []).map((ag) => (
-                <tr key={ag.agent_id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
-                  <td className="py-3 px-5">
-                    <div className="font-bold text-slate-900 dark:text-white">{ag.name}</div>
-                    <div className="text-[10px] text-slate-400 dark:text-zinc-500">{ag.agent_id}</div>
-                  </td>
-                  <td className="py-3 px-5 text-slate-600 dark:text-zinc-400">{ag.transport}</td>
-                  <td className="py-3 px-5">
-                    <div className="flex gap-1 flex-wrap">
-                      {ag.capabilities.map((c: string) => (
-                        <span key={c} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 text-[10px]">
-                          {c}
-                        </span>
-                      ))}
+              {(!mcpConfig?.connected_agents || mcpConfig.connected_agents.length === 0) ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-xs">
+                    <div className="max-w-md mx-auto space-y-2">
+                      <div className="h-9 w-9 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-slate-400">
+                        <Plug className="h-4 w-4" />
+                      </div>
+                      <div className="font-bold text-slate-800 dark:text-zinc-200">
+                        Zero Agents Connected to this Workspace
+                      </div>
+                      <p className="text-slate-500 dark:text-zinc-400 text-xs font-sans">
+                        Run <code className="text-emerald-600 dark:text-emerald-400 font-mono">npx @crustdev/armordesk mcp check</code> in your terminal or configure Claude Desktop above to register your first governed agent.
+                      </p>
                     </div>
                   </td>
-                  <td className="py-3 px-5">
-                    <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
-                      {ag.enforced_policy}
-                    </span>
-                  </td>
-                  <td className="py-3 px-5">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{ag.status}</span>
-                    </span>
-                  </td>
                 </tr>
-              ))}
+              ) : (
+                mcpConfig.connected_agents.map((ag) => (
+                  <tr key={ag.agent_id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3 px-5">
+                      <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span>{ag.name}</span>
+                        {(ag as any).is_simulated && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 border border-amber-500/25">
+                            SIMULATED
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500">{ag.agent_id}</div>
+                    </td>
+                    <td className="py-3 px-5 text-slate-600 dark:text-zinc-400">{ag.transport}</td>
+                    <td className="py-3 px-5">
+                      <div className="flex gap-1 flex-wrap">
+                        {ag.capabilities.map((c: string) => (
+                          <span key={c} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 text-[10px]">
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-3 px-5">
+                      <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                        {ag.enforced_policy}
+                      </span>
+                    </td>
+                    <td className="py-3 px-5">
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>{ag.status}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-sans">
+                        {ag.last_heartbeat}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
