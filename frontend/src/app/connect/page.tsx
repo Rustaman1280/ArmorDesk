@@ -135,10 +135,17 @@ export default function ConnectGatewayPage() {
             <span className="text-xs font-mono font-semibold tracking-wider text-emerald-600 dark:text-emerald-400 uppercase">
               AGENT INTEGRATION HUB
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 font-bold flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>MCP v1.0 ONLINE</span>
-            </span>
+            {(mcpConfig?.connected_agents?.length || 0) > 0 ? (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 font-bold flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>MCP FLEET ACTIVE ({mcpConfig?.connected_agents?.length} AGENTS)</span>
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 font-bold flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                <span>MCP GATEWAY LISTENING (0 AGENTS)</span>
+              </span>
+            )}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
             Connect Your AI Agents via MCP

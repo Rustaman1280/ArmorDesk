@@ -81,6 +81,7 @@ interface AppContextType {
   addToast: (title: string, message: string, type?: "info" | "success" | "warning" | "error") => void;
   removeToast: (id: string) => void;
   mcpLatencies: { email: number; crm: number; bank: number };
+  connectedAgentsCount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -95,6 +96,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [proActive, setProActive] = useState<boolean>(false);
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+  const [connectedAgentsCount, setConnectedAgentsCount] = useState<number>(0);
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -302,10 +304,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchConnectedAgents = async () => {
+    try {
+      const cfg = await api.getMCPConfig(tenantId);
+      setConnectedAgentsCount(cfg?.connected_agents?.length || 0);
+    } catch (e) {
+      setConnectedAgentsCount(0);
+    }
+  };
+
   useEffect(() => {
     refreshTenants();
     checkProStatus();
     fetchPendingApprovals();
+    fetchConnectedAgents();
   }, [tenantId, reloadTrigger]);
 
   // Subtle live ping variation for MCP server latency
@@ -353,6 +365,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addToast,
         removeToast,
         mcpLatencies,
+        connectedAgentsCount,
       }}
     >
       {children}

@@ -23,7 +23,7 @@ import {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { pendingApprovalsCount, mcpLatencies, currentUser, currentTenant, logout } = useApp();
+  const { pendingApprovalsCount, mcpLatencies, currentUser, currentTenant, logout, connectedAgentsCount } = useApp();
 
   const navGroups = [
     {
@@ -193,39 +193,58 @@ export function Sidebar() {
           </button>
         </div>
 
+        {/* Agent Connection Status Indicator */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400">
-            <Radio className="h-3 w-3 text-emerald-600 dark:text-emerald-400 animate-pulse" />
-            <span>SERVER TOOL SANDBOXES</span>
+            <Radio className={`h-3 w-3 ${connectedAgentsCount > 0 ? "text-emerald-600 dark:text-emerald-400 animate-pulse" : "text-amber-500"}`} />
+            <span>AGENT CONNECTION</span>
           </div>
-          <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">READY</span>
+          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border ${
+            connectedAgentsCount > 0
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25"
+          }`}>
+            {connectedAgentsCount > 0 ? `ONLINE (${connectedAgentsCount})` : "NOT CONNECTED"}
+          </span>
         </div>
 
-        <div className="space-y-1.5 text-[11px] font-mono">
-          <div className="flex items-center justify-between px-2 py-1 rounded bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.04]">
-            <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              email-mcp
-            </span>
-            <span className="text-slate-400 dark:text-zinc-500 tabular-nums">{mcpLatencies.email}ms</span>
+        {connectedAgentsCount === 0 ? (
+          <div className="p-2.5 rounded-lg bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.04] text-[10px] font-mono text-slate-500 dark:text-zinc-400 space-y-1">
+            <div className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <span>0 Agents Connected</span>
+            </div>
+            <p className="text-[10px] leading-tight text-slate-500 dark:text-zinc-500 font-sans">
+              Run CLI in terminal or configure Claude/Cursor to connect.
+            </p>
           </div>
+        ) : (
+          <div className="space-y-1.5 text-[11px] font-mono">
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.04]">
+              <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                email-mcp
+              </span>
+              <span className="text-slate-400 dark:text-zinc-500 tabular-nums">{mcpLatencies.email}ms</span>
+            </div>
 
-          <div className="flex items-center justify-between px-2 py-1 rounded bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.04]">
-            <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              crm-mcp
-            </span>
-            <span className="text-slate-400 dark:text-zinc-500 tabular-nums">{mcpLatencies.crm}ms</span>
-          </div>
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.04]">
+              <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                crm-mcp
+              </span>
+              <span className="text-slate-400 dark:text-zinc-500 tabular-nums">{mcpLatencies.crm}ms</span>
+            </div>
 
-          <div className="flex items-center justify-between px-2 py-1 rounded bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.04]">
-            <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              bank-mcp
-            </span>
-            <span className="text-slate-400 dark:text-zinc-500 tabular-nums">{mcpLatencies.bank}ms</span>
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/[0.04]">
+              <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                bank-mcp
+              </span>
+              <span className="text-slate-400 dark:text-zinc-500 tabular-nums">{mcpLatencies.bank}ms</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );
