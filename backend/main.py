@@ -668,6 +668,7 @@ CONNECTED_AGENTS_FLEET = [
 @app.get("/api/mcp/config", response_model=MCPGatewayInfo)
 def get_mcp_config(tenant_id: str = Query("acme-corp")):
     backend_base = os.getenv("BACKEND_PUBLIC_URL") or "https://armordesk.crusts.dev"
+    tenant_api_key = f"ak_live_{tenant_id}_mcp_key"
     claude_cfg = {
         "mcpServers": {
             "armordesk_gateway": {
@@ -675,7 +676,7 @@ def get_mcp_config(tenant_id: str = Query("acme-corp")):
                 "args": ["-y", "@modelcontextprotocol/server-fetch", f"{backend_base}/api/mcp/gateway"],
                 "env": {
                     "ARMORIQ_TENANT": tenant_id,
-                    "ARMORIQ_API_KEY": "ak_live_acme_corpx892348a"
+                    "ARMORIQ_API_KEY": tenant_api_key
                 }
             }
         }
@@ -686,7 +687,7 @@ def get_mcp_config(tenant_id: str = Query("acme-corp")):
                 "url": f"{backend_base}/api/mcp/gateway",
                 "headers": {
                     "X-ArmorIQ-Tenant": tenant_id,
-                    "Authorization": "Bearer ak_live_acme_corpx892348a"
+                    "Authorization": f"Bearer {tenant_api_key}"
                 }
             }
         }
@@ -774,7 +775,7 @@ print(result)  # Automatically frozen in ArmorDesk Approval Inbox if > $50!'''
         sse_url=f"{backend_base}/api/mcp/sse",
         protocol_version="2024-11-05",
         tenant_id=tenant_id,
-        api_key_masked="ak_live_acme_corpx892348a",
+        api_key_masked=f"ak_live_{tenant_id[:6]}...key",
         governed_tools=[MCPToolDefinition(**t) for t in GOVERNED_MCP_TOOLS],
         connected_agents=agents_list,
         sample_configs={

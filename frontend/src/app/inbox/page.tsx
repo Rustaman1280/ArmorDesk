@@ -69,7 +69,7 @@ export default function ApprovalInboxPage() {
     if (action === "APPROVE" && currentUser.role === "intern") {
       addToast(
         "Action Denied by Policy (for_user)",
-        "Intern account (Alex Rivera) lacks treasury authorization. Switch to Sarah Chen (CFO) in the top-right header.",
+        `Intern account (${currentUser.name}) lacks treasury authorization. Switch role to Manager in the top-right header.`,
         "error"
       );
       return;
@@ -315,10 +315,10 @@ export default function ApprovalInboxPage() {
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <div className="font-bold text-amber-900 dark:text-amber-200">
-              Notice: Active Session is {currentUser.name} (Junior FinOps Intern)
+              Notice: Active Session is {currentUser.name} (Restricted Intern Role)
             </div>
             <p className="text-slate-600 dark:text-zinc-400 leading-relaxed font-sans">
-              Under role policy enforcement (<code className="font-mono text-amber-700 dark:text-amber-300 font-bold">for_user</code>), intern roles <strong>do not possess treasury approval privileges</strong>. The "Approve & Disburse" action is locked. Switch role to <strong>Sarah Chen (CFO)</strong> in the top-right header to sign and execute this disbursement.
+              Under role policy enforcement (<code className="font-mono text-amber-700 dark:text-amber-300 font-bold">for_user</code>), intern roles <strong>do not possess treasury approval privileges</strong>. The "Approve & Disburse" action is locked. Switch role to <strong>Manager</strong> in the top-right header to sign and execute this disbursement.
             </p>
           </div>
         </div>
@@ -586,8 +586,8 @@ export default function ApprovalInboxPage() {
               <div className="p-4 border-t border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-[#121317] flex items-center justify-between">
                 <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-medium">
                   {currentUser.role === "manager"
-                    ? "✓ Authorized for CFO signature (Sarah Chen)"
-                    : "🔒 Locked: Alex Rivera (Intern) lacks disbursement permission"}
+                    ? `✓ Authorized for ${currentUser.name} (${currentUser.title || "Manager"})`
+                    : `🔒 Locked: ${currentUser.name} (Intern) lacks disbursement permission`}
                 </span>
 
                 {selectedItem.status === "HELD_FOR_APPROVAL" ? (

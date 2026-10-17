@@ -207,7 +207,7 @@ export default function AgentReceiptsPage() {
         </div>
 
         {/* Right Column: Digital Certificate Document (Span 8) */}
-        {selectedReceipt && (
+        {selectedReceipt ? (
           <div className="lg:col-span-8 space-y-4">
             <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#111114] p-6 shadow-md relative overflow-hidden">
               {/* Top Certificate Header Banner */}
@@ -424,6 +424,20 @@ export default function AgentReceiptsPage() {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        ) : (
+          <div className="lg:col-span-8 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#111114] p-12 text-center flex flex-col items-center justify-center space-y-3 min-h-[420px] shadow-sm">
+            <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 flex items-center justify-center mx-auto border border-slate-200 dark:border-white/10">
+              <Receipt className="h-6 w-6" />
+            </div>
+            <div className="max-w-md mx-auto space-y-1">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white font-mono">
+                No Receipt Selected
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 font-sans leading-relaxed">
+                Immutable cryptographic receipts are minted when financial or write actions execute through your Governed MCP Gateway. Settle a pending hold in the Approval Inbox or dispatch an agent tool call to generate your first verified certificate.
+              </p>
             </div>
           </div>
         )}

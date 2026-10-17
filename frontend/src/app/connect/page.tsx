@@ -123,8 +123,8 @@ export default function ConnectGatewayPage() {
     }
   };
 
-  const gatewayUrl = mcpConfig?.gateway_url || "http://localhost:8000/api/mcp/gateway";
-  const apiKey = "ak_live_acme_corpx892348a";
+  const gatewayUrl = mcpConfig?.gateway_url || "https://armordesk.crusts.dev/api/mcp/gateway";
+  const apiKey = mcpConfig?.api_key_masked || "ak_live_corporate_key";
 
   return (
     <div className="space-y-8 pb-12">
@@ -228,7 +228,7 @@ export default function ConnectGatewayPage() {
             </button>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-            Tenant: <strong>{tenantId}</strong> ({currentTenant?.name || "Acme Corp"})
+            Tenant: <strong>{tenantId}</strong> ({currentTenant?.name || tenantId})
           </p>
         </div>
 
