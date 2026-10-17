@@ -17,14 +17,14 @@ export function SimulatedAcmeDemo() {
   const { fps } = useVideoConfig();
 
   // 1. Camera Zoom-In & Zoom-Out with Smooth Easing Curves
-  // Frame 0-180: Wide overview (scale: 1.0)
-  // Frame 180-320: Smooth Ease Zoom-In to action area (scale: 1.0 -> 1.38)
-  // Frame 320-650: Hold close-up during cursor hover & click
-  // Frame 650-800: Smooth Ease Zoom-Out back to wide (scale: 1.38 -> 1.0)
+  // Frame 0-160: Wide overview (scale: 1.0)
+  // Frame 160-260: Smooth Ease Zoom-In (scale: 1.0 -> 1.22) focused right on the ticket
+  // Frame 260-520: Hold close-up during cursor hover & click
+  // Frame 520-620: Smooth Ease Zoom-Out back to wide (scale: 1.22 -> 1.0)
   const zoomScale = interpolate(
     frame,
-    [0, 180, 320, 650, 800, 1350],
-    [1.0, 1.0, 1.38, 1.38, 1.0, 1.0],
+    [0, 160, 260, 520, 620, 1080],
+    [1.0, 1.0, 1.22, 1.22, 1.0, 1.0],
     {
       easing: Easing.bezier(0.25, 0.1, 0.25, 1.0),
       extrapolateLeft: "clamp",
@@ -32,48 +32,49 @@ export function SimulatedAcmeDemo() {
     }
   );
 
-  const cameraOriginX = interpolate(frame, [180, 320, 650, 800], [50, 62, 62, 50], {
+  // Pan smoothly towards the button area without cutting off the card
+  const cameraOriginX = interpolate(frame, [160, 260, 520, 620], [50, 62, 62, 50], {
     easing: Easing.bezier(0.25, 0.1, 0.25, 1.0),
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const cameraOriginY = interpolate(frame, [180, 320, 650, 800], [50, 68, 68, 50], {
+  const cameraOriginY = interpolate(frame, [160, 260, 520, 620], [50, 56, 56, 50], {
     easing: Easing.bezier(0.25, 0.1, 0.25, 1.0),
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
   // 2. Animated Mouse Cursor Position (Bezier Ease)
-  // Start: (1200, 200) -> Move to Approve button at (1140, 560)
-  const cursorX = interpolate(frame, [0, 200, 440], [1280, 1280, 1140], {
+  // Big, visible cursor moving towards the Approve button
+  const cursorX = interpolate(frame, [0, 160, 360], [1320, 1320, 1160], {
     easing: Easing.bezier(0.25, 0.1, 0.25, 1.0),
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const cursorY = interpolate(frame, [0, 200, 440], [220, 220, 565], {
+  const cursorY = interpolate(frame, [0, 160, 360], [220, 220, 540], {
     easing: Easing.bezier(0.25, 0.1, 0.25, 1.0),
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Cursor Click effect at frame 480
-  const isClicking = frame >= 480 && frame < 510;
-  const isApproved = frame >= 495;
+  // Cursor Click effect at frame 400
+  const isClicking = frame >= 400 && frame < 430;
+  const isApproved = frame >= 415;
 
   // Click ripple expansion
-  const clickRipple = isClicking ? interpolate(frame, [480, 510], [0, 40]) : 0;
-  const clickOpacity = isClicking ? interpolate(frame, [480, 510], [0.8, 0]) : 0;
+  const clickRipple = isClicking ? interpolate(frame, [400, 430], [0, 60]) : 0;
+  const clickOpacity = isClicking ? interpolate(frame, [400, 430], [0.9, 0]) : 0;
 
   // Receipt Certificate Slide-in after approval
-  const receiptSpring = spring({ frame: frame - 820, fps, config: { damping: 11, mass: 0.7 } });
+  const receiptSpring = spring({ frame: frame - 640, fps, config: { damping: 11, mass: 0.7 } });
 
   return (
     <div
       style={{
-        width: 1720,
-        height: 880,
+        width: 1640,
+        height: 840,
         margin: "0 auto",
       }}
       className="relative rounded-3xl overflow-hidden bg-white border border-slate-200/90 shadow-[0_30px_90px_rgba(0,0,0,0.08)] flex flex-col justify-between select-none"
@@ -96,7 +97,7 @@ export function SimulatedAcmeDemo() {
               <div className="h-3.5 w-3.5 rounded-full bg-slate-300" />
               <div className="h-3.5 w-3.5 rounded-full bg-slate-300" />
             </div>
-            <div className="flex items-center gap-2 ml-4 px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-600">
+            <div className="flex items-center gap-2 ml-4 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-600 shadow-sm">
               <Shield className="h-3.5 w-3.5 text-emerald-600" />
               <span className="font-bold text-slate-800">armordesk.crusts.dev</span>
               <span className="text-slate-400">/inbox</span>
@@ -105,11 +106,11 @@ export function SimulatedAcmeDemo() {
 
           {/* User Persona Header */}
           <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-mono font-bold border border-amber-200 flex items-center gap-1.5">
+            <span className="px-3.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-mono font-bold border border-amber-200 flex items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5" />
               <span>Acme Corp Demo Workspace</span>
             </span>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs font-mono">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-mono shadow-sm">
               <div className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px]">
                 SC
               </div>
@@ -140,16 +141,16 @@ export function SimulatedAcmeDemo() {
 
           {/* Primary Holding Card */}
           <div
-            className={`p-8 rounded-3xl bg-white border-2 transition-all shadow-lg ${
-              isApproved ? "border-emerald-500 bg-emerald-50/20" : "border-amber-400"
+            className={`p-7 rounded-3xl bg-white border-2 transition-all shadow-md ${
+              isApproved ? "border-emerald-500 bg-emerald-50/25" : "border-amber-400"
             }`}
           >
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 {isApproved ? (
-                  <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                  <CheckCircle2 className="h-7 w-7 text-emerald-600 shrink-0" />
                 ) : (
-                  <Lock className="h-6 w-6 text-amber-500" />
+                  <Lock className="h-7 w-7 text-amber-500 shrink-0" />
                 )}
                 <div>
                   <span className="font-mono text-xs text-slate-400 block font-bold">
@@ -168,7 +169,7 @@ export function SimulatedAcmeDemo() {
             </div>
 
             {/* Interception reason banner */}
-            <div className="my-5 p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between text-xs font-mono text-amber-900">
+            <div className="my-4 p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between text-xs font-mono text-amber-900">
               <div className="flex items-center gap-2.5">
                 <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
                 <span>
@@ -199,7 +200,7 @@ export function SimulatedAcmeDemo() {
                 <button
                   type="button"
                   style={{
-                    transform: isClicking ? "scale(0.94)" : "scale(1)",
+                    transform: isClicking ? "scale(0.92)" : "scale(1)",
                   }}
                   className={`px-8 py-3 rounded-xl font-mono text-xs font-extrabold shadow-md flex items-center gap-2 transition-all ${
                     isApproved
@@ -224,7 +225,7 @@ export function SimulatedAcmeDemo() {
           </div>
 
           {/* Newly Minted Cryptographic Receipt Popup */}
-          {frame >= 810 && (
+          {frame >= 630 && (
             <div
               style={{
                 opacity: receiptSpring,
@@ -251,18 +252,19 @@ export function SimulatedAcmeDemo() {
         </div>
       </div>
 
-      {/* Realistic Animated macOS / High-Tech SVG Mouse Cursor */}
+      {/* BIGGER, PROMINENT ANIMATED MOUSE CURSOR (54px) */}
       <div
         style={{
           position: "absolute",
           left: cursorX,
           top: cursorY,
           pointerEvents: "none",
-          zIndex: 50,
-          transition: "transform 0.05s linear",
+          zIndex: 60,
+          transform: isClicking ? "scale(0.85)" : "scale(1)",
+          transition: "transform 0.08s ease-out",
         }}
       >
-        {/* Click Ripple Circle */}
+        {/* Click Ripple Expanding Circle */}
         {isClicking && (
           <div
             style={{
@@ -271,11 +273,20 @@ export function SimulatedAcmeDemo() {
               opacity: clickOpacity,
               transform: "translate(-50%, -50%)",
             }}
-            className="absolute rounded-full border-2 border-emerald-500 bg-emerald-400/20 pointer-events-none"
+            className="absolute rounded-full border-4 border-emerald-500 bg-emerald-400/30 pointer-events-none"
           />
         )}
 
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        {/* 54px High-Contrast Cursor SVG */}
+        <svg
+          width="54"
+          height="54"
+          viewBox="0 0 24 24"
+          fill="none"
+          style={{
+            filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.35))",
+          }}
+        >
           <path
             d="M5.5 3.5L18.5 11.5L12.5 13.5L9.5 20.5L5.5 3.5Z"
             fill="#0F172A"

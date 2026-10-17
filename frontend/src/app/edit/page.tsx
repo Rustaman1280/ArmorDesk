@@ -34,43 +34,43 @@ export default function VideoEditorLiveProgressPage() {
       id: 1,
       frame: 0,
       timestamp: "00:00",
-      duration: "40s",
+      duration: "38s",
       title: "The Problem & Who It Is For",
       subtitle: "Autonomous agent vulnerability & indirect prompt injection",
-      slot: "slot_01_exploit.mp4",
+      slot: "Sequential Bento beats",
     },
     {
       id: 2,
-      frame: 1200,
-      timestamp: "00:40",
-      duration: "40s",
+      frame: 1140,
+      timestamp: "00:38",
+      duration: "38s",
       title: "The Architecture & 12 Agents",
-      subtitle: "3D Metallic ArmorDesk shield & zero-trust MCP gateway",
-      slot: "3D R3F Core Engine",
+      subtitle: "3D Metallic ArmorDesk shield & single-command OAuth",
+      slot: "3D R3F Core & Onboarding VO",
     },
     {
       id: 3,
-      frame: 2400,
-      timestamp: "01:20",
-      duration: "45s",
+      frame: 2280,
+      timestamp: "01:16",
+      duration: "36s",
       title: "End-to-End Live Product Demo",
-      subtitle: "$20 auto-passed refund vs $8,000 dual-control escrow hold",
-      slot: "slot_02_approval_inbox.mp4",
+      subtitle: "Acme Corp CFO simulated dashboard with bezier zoom & cursor",
+      slot: "Interactive Acme CFO Demo",
     },
     {
       id: 4,
-      frame: 3750,
-      timestamp: "02:05",
-      duration: "45s",
-      title: "tools.armoriq.ai & Policy Studio",
-      subtitle: "Spend limit ceiling, vendor whitelist & Merkle receipts",
-      slot: "slot_03_armoriq_console.mp4",
+      frame: 3360,
+      timestamp: "01:52",
+      duration: "40s",
+      title: "tools.armoriq.ai & Real Dashboard",
+      subtitle: "3 Policy Studio rules & live ARMOR Tools 3.50M tokens telemetry",
+      slot: "Real ARMOR Tools Screenshot",
     },
     {
       id: 5,
-      frame: 5100,
-      timestamp: "02:50",
-      duration: "40s",
+      frame: 4560,
+      timestamp: "02:32",
+      duration: "38s",
       title: "Takeaways & Future Roadmap",
       subtitle: "Protocol-level defense, AWS Nitro Enclaves & consensus voting",
       slot: "Roadmap Milestones",
@@ -106,7 +106,7 @@ export default function VideoEditorLiveProgressPage() {
         <div className="flex items-center gap-3 shrink-0 text-xs font-mono">
           <div className="p-3.5 rounded-2xl bg-white shadow-sm border border-slate-200 text-right space-y-0.5">
             <span className="text-[10px] text-slate-400 block font-bold">TOTAL DURATION</span>
-            <span className="text-emerald-600 font-extrabold text-sm">03:30 (6300 Frames)</span>
+            <span className="text-emerald-600 font-extrabold text-sm">03:10 (5700 Frames)</span>
           </div>
           <div className="p-3.5 rounded-2xl bg-white shadow-sm border border-slate-200 text-right space-y-0.5">
             <span className="text-[10px] text-slate-400 block font-bold">STUDIO FORMAT</span>

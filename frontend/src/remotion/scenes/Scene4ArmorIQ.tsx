@@ -1,32 +1,35 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate, Audio, staticFile } from "remotion";
-import { Sliders, CheckCircle2, XCircle, Award, ExternalLink, Hash, Lock, ShieldCheck, Sparkles } from "lucide-react";
-import { CinematicDemoBox } from "../components/CinematicDemoBox";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate, Img, staticFile } from "remotion";
+import { Sliders, CheckCircle2, XCircle, Award, ExternalLink, Hash, Lock, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 
 export function Scene4ArmorIQ() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   // Camera Drift
-  const cameraScale = interpolate(frame, [0, 600, 1350], [1.03, 1.0, 1.02], {
+  const cameraScale = interpolate(frame, [0, 600, 1200], [1.03, 1.0, 1.02], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Modal 1: Spend Limit (Frames 0 - 350)
+  // Modal 1: Spend Limit (Frames 0 - 240)
   const modal1In = spring({ frame: frame - 4, fps, config: { damping: 10, mass: 0.6 } });
-  const modal1Out = interpolate(frame, [300, 350], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const modal1Out = interpolate(frame, [200, 240], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  // Modal 2: Vendor Whitelist (Frames 340 - 700)
-  const modal2In = spring({ frame: frame - 340, fps, config: { damping: 10, mass: 0.6 } });
-  const modal2Out = interpolate(frame, [650, 700], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  // Modal 2: Vendor Whitelist (Frames 230 - 450)
+  const modal2In = spring({ frame: frame - 230, fps, config: { damping: 10, mass: 0.6 } });
+  const modal2Out = interpolate(frame, [410, 450], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  // Modal 3: Intent Anchoring (Frames 690 - 1020)
-  const modal3In = spring({ frame: frame - 690, fps, config: { damping: 10, mass: 0.6 } });
-  const modal3Out = interpolate(frame, [970, 1020], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  // Modal 3: Intent Anchoring (Frames 440 - 660)
+  const modal3In = spring({ frame: frame - 440, fps, config: { damping: 10, mass: 0.6 } });
+  const modal3Out = interpolate(frame, [620, 660], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  // Beat 4: Large Screen Recording Box (Frames 1000 - 1350)
-  const consoleEntrance = spring({ frame: frame - 1000, fps, config: { damping: 11, mass: 0.7 } });
+  // Beat 2: Real ARMOR Tools Dashboard Screenshot (Frames 650 - 1200)
+  const dashboardEntrance = spring({ frame: frame - 650, fps, config: { damping: 11, mass: 0.7 } });
+  const dashboardZoom = interpolate(frame, [650, 900, 1200], [1.0, 1.12, 1.15], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   // Floating background glow spotlights
   const orb1Y = Math.sin(frame * 0.035) * 35;
@@ -64,15 +67,15 @@ export function Scene4ArmorIQ() {
       />
 
       {/* Top Floating Scene Tag */}
-      <div className="absolute top-8 left-12 z-30 flex items-center gap-3">
-        <div className="px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-800 font-mono text-xs font-bold tracking-widest flex items-center gap-2 shadow-sm">
+      <div className="absolute top-8 left-16 z-30 flex items-center gap-3">
+        <div className="px-5 py-2 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-slate-800 font-mono text-xs font-bold tracking-widest flex items-center gap-2.5 shadow-sm">
           <Sliders className="h-3.5 w-3.5 text-violet-600" />
-          <span>04 / ARMORIQL POLICY STUDIO : MODAL BEATS</span>
+          <span>04 / ARMORIQL POLICY STUDIO : MODAL BEATS &amp; DASHBOARD</span>
         </div>
       </div>
 
-      {/* MODAL POPUP 1: SPEND LIMIT CEILING (FRAMES 0 - 350) */}
-      {frame < 360 && (
+      {/* MODAL POPUP 1: SPEND LIMIT CEILING (FRAMES 0 - 240) */}
+      {frame < 250 && (
         <div
           style={{
             opacity: interpolate(modal1In, [0, 1], [0, 1]) * modal1Out,
@@ -118,8 +121,8 @@ export function Scene4ArmorIQ() {
         </div>
       )}
 
-      {/* MODAL POPUP 2: VENDOR ALLOWLIST CHECK (FRAMES 340 - 700) */}
-      {frame >= 330 && frame < 710 && (
+      {/* MODAL POPUP 2: VENDOR ALLOWLIST CHECK (FRAMES 230 - 450) */}
+      {frame >= 225 && frame < 460 && (
         <div
           style={{
             opacity: interpolate(modal2In, [0, 1], [0, 1]) * modal2Out,
@@ -165,8 +168,8 @@ export function Scene4ArmorIQ() {
         </div>
       )}
 
-      {/* MODAL POPUP 3: INTENT ANCHORING & MERKLE PROOF (FRAMES 690 - 1020) */}
-      {frame >= 680 && frame < 1030 && (
+      {/* MODAL POPUP 3: INTENT ANCHORING & MERKLE PROOF (FRAMES 440 - 660) */}
+      {frame >= 435 && frame < 670 && (
         <div
           style={{
             opacity: interpolate(modal3In, [0, 1], [0, 1]) * modal3Out,
@@ -218,25 +221,90 @@ export function Scene4ArmorIQ() {
         </div>
       )}
 
-      {/* BEAT 4: CINEMATIC SCREEN RECORDING BOX (FRAMES 1000 - 1350) */}
-      {frame >= 990 && (
+      {/* BEAT 2: ACTUAL LIVE ARMOR TOOLS DASHBOARD SCREENSHOT DISPLAY (FRAMES 650 - 1200) */}
+      {frame >= 640 && (
         <div
           style={{
-            opacity: consoleEntrance,
-            transform: `scale(${interpolate(consoleEntrance, [0, 1], [0.94, 1])})`,
+            opacity: dashboardEntrance,
+            transform: `scale(${interpolate(dashboardEntrance, [0, 1], [0.93, 1])})`,
           }}
-          className="z-20 w-full flex items-center justify-center"
+          className="z-20 w-full flex flex-col items-center justify-center my-auto"
         >
-          <CinematicDemoBox
-            slotId="slot_03_armoriq_console"
-            title="Live Screen Recording: tools.armoriq.ai Console"
-            subtitle="Full-screen video of your actual ArmorIQ Console showing the Policy Studio and active governance rules."
-            activeBadge={{
-              emoji: "🛡️",
-              text: "ARMORIQL CONSOLE : LIVE ATTESTATION RULES",
-              color: "violet",
+          {/* High-Tech Apple Style Window Frame displaying User's Real Screenshot */}
+          <div
+            style={{
+              width: 1640,
+              height: 840,
             }}
-          />
+            className="rounded-3xl overflow-hidden bg-white border border-slate-200/90 shadow-[0_30px_90px_rgba(0,0,0,0.1)] flex flex-col justify-between relative"
+          >
+            {/* Window Top Bar */}
+            <div className="h-16 px-8 bg-slate-50 border-b border-slate-200 flex items-center justify-between z-20">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-2">
+                  <div className="h-3.5 w-3.5 rounded-full bg-slate-300" />
+                  <div className="h-3.5 w-3.5 rounded-full bg-slate-300" />
+                  <div className="h-3.5 w-3.5 rounded-full bg-slate-300" />
+                </div>
+                <div className="flex items-center gap-2 ml-4 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-700 font-bold shadow-sm">
+                  <ExternalLink className="h-3.5 w-3.5 text-violet-600" />
+                  <span>tools.armoriq.ai</span>
+                  <span className="text-slate-400">/coding-agents</span>
+                </div>
+              </div>
+
+              {/* Live Metric Badges Floating in Header */}
+              <div className="flex items-center gap-3 font-mono text-xs">
+                <div className="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>3.50M Tokens Tracked</span>
+                </div>
+                <div className="px-3.5 py-1.5 rounded-full bg-cyan-50 text-cyan-800 border border-cyan-200 font-bold">
+                  OpenCode + Claude Code
+                </div>
+              </div>
+            </div>
+
+            {/* The Actual Dashboard Image with Smooth Zoom/Pan */}
+            <div className="relative flex-1 bg-slate-900 overflow-hidden flex items-center justify-center">
+              <Img
+                src={staticFile("images/armortools-dashboard.png")}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  transform: `scale(${dashboardZoom})`,
+                  transformOrigin: "center 40%",
+                  transition: "transform 0.1s linear",
+                }}
+              />
+
+              {/* Floating Highlight Callout Box over OpenCode Row */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 30,
+                  left: 40,
+                }}
+                className="px-6 py-3 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-emerald-500/40 shadow-2xl text-white font-mono text-xs space-y-1 z-30"
+              >
+                <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                  <Sparkles className="h-4 w-4" />
+                  <span>ARMOR TOOLS LIVE TELEMETRY</span>
+                </div>
+                <div className="text-slate-300 text-[11px]">
+                  Enforcing spend limit ceilings &amp; token telemetry on <strong>OpenCode</strong> (3.14M tokens) &amp;{" "}
+                  <strong>Claude Code</strong>.
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Window Bar */}
+            <div className="h-12 px-8 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs font-mono text-slate-500 z-20">
+              <span>REAL AUDIT CONSOLE : TOOLS.ARMORIQ.AI</span>
+              <span className="font-bold text-violet-700">LIVE PRODUCTION CODING AGENT METRICS</span>
+            </div>
+          </div>
         </div>
       )}
 
