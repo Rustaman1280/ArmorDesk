@@ -67,6 +67,54 @@ function verifyProof(request) {
   };
 }
 
+// src/config.ts
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
+function getConfigDir() {
+  return join(homedir(), ".armordesk");
+}
+function getConfigPath() {
+  return join(getConfigDir(), "config.json");
+}
+function loadStoredConfig() {
+  try {
+    const configPath = getConfigPath();
+    if (existsSync(configPath)) {
+      const raw = readFileSync(configPath, "utf8");
+      return JSON.parse(raw);
+    }
+  } catch {
+  }
+  return {};
+}
+function saveStoredConfig(config) {
+  try {
+    const dir = getConfigDir();
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true, mode: 448 });
+    }
+    const configPath = getConfigPath();
+    writeFileSync(configPath, JSON.stringify(config, null, 2), {
+      encoding: "utf8",
+      mode: 384
+    });
+  } catch (err) {
+    console.warn(`[ArmorDesk] Could not write config to ${getConfigPath()}: ${err.message}`);
+  }
+}
+function clearStoredConfig() {
+  try {
+    const configPath = getConfigPath();
+    if (existsSync(configPath)) {
+      unlinkSync(configPath);
+      return true;
+    }
+  } catch {
+  }
+  return false;
+}
+
 // src/client.ts
 var ArmorDeskClient = class {
   baseUrl;
@@ -74,6 +122,7 @@ var ArmorDeskClient = class {
   tenantId;
   userName;
   userRole;
+  token;
   _fetch;
   crypto = {
     canonicalJson,
@@ -83,11 +132,13 @@ var ArmorDeskClient = class {
     verifyProof
   };
   constructor(options = {}) {
-    this.baseUrl = (options.baseUrl || typeof process !== "undefined" && process.env?.ARMORDESK_URL || "https://armordesk.crusts.dev").replace(/\/$/, "");
-    this.apiKey = options.apiKey || (typeof process !== "undefined" ? process.env?.ARMORIQ_API_KEY || process.env?.ARMORIQ_PRO_API_KEY : void 0);
-    this.tenantId = options.tenantId || "acme-corp";
-    this.userName = options.userName || "Sarah Chen";
-    this.userRole = options.userRole || "manager";
+    const stored = typeof process !== "undefined" ? loadStoredConfig() : {};
+    this.baseUrl = (options.baseUrl || typeof process !== "undefined" && process.env?.ARMORDESK_URL || stored.baseUrl || "https://armordesk.crusts.dev").replace(/\/$/, "");
+    this.apiKey = options.apiKey || (typeof process !== "undefined" ? process.env?.ARMORIQ_API_KEY || process.env?.ARMORIQ_PRO_API_KEY : void 0) || stored.apiKey;
+    this.token = stored.token;
+    this.tenantId = options.tenantId || stored.tenant?.id || "acme-corp";
+    this.userName = options.userName || stored.user?.name || "Sarah Chen";
+    this.userRole = options.userRole || stored.user?.role || "manager";
     this._fetch = options.fetch || globalThis.fetch.bind(globalThis);
   }
   async request(endpoint, options = {}) {
@@ -97,7 +148,9 @@ var ArmorDeskClient = class {
       "X-ArmorIQ-Tenant": this.tenantId,
       ...options.headers
     };
-    if (this.apiKey) {
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
+    } else if (this.apiKey) {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
       headers["X-ArmorIQ-API-Key"] = this.apiKey;
     }
@@ -116,6 +169,62 @@ var ArmorDeskClient = class {
       );
     }
     return res.json();
+  }
+  /**
+   * Authenticate with an ArmorDesk account and persist credentials
+   */
+  async login(email, password = "admin", tenantId) {
+    const res = await this.request("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
+        tenant_id: tenantId || this.tenantId
+      })
+    });
+    if (res.user && res.token) {
+      this.token = res.token;
+      this.userName = res.user.name;
+      this.userRole = res.user.role;
+      if (res.tenant?.id) {
+        this.tenantId = res.tenant.id;
+      }
+      if (typeof process !== "undefined") {
+        saveStoredConfig({
+          baseUrl: this.baseUrl,
+          token: res.token,
+          user: res.user,
+          tenant: res.tenant,
+          apiKey: this.apiKey,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+      }
+    }
+    return res;
+  }
+  /**
+   * Check live status and ping telemetry of Governed MCP Gateway
+   */
+  async getMCPStatus() {
+    return this.request("/api/mcp/ping", {
+      method: "POST"
+    });
+  }
+  /**
+   * Comprehensive MCP diagnostic: measures latency, pings gateway, and tests tool readiness
+   */
+  async checkMCP(tenantId) {
+    const start = Date.now();
+    const ping = await this.getMCPStatus();
+    const latencyMs = Date.now() - start;
+    const config = await this.getMCPConfig(tenantId || this.tenantId);
+    const connected = ping.status === "CONNECTED" && config.governed_tools.length > 0;
+    return {
+      connected,
+      latencyMs,
+      ping,
+      config
+    };
   }
   /**
    * Health and runtime operational telemetry
@@ -291,6 +400,11 @@ export {
   buildMerkleTree,
   verifyMerkleRoot,
   verifyProof,
+  getConfigDir,
+  getConfigPath,
+  loadStoredConfig,
+  saveStoredConfig,
+  clearStoredConfig,
   ArmorDeskClient,
   generateClaudeDesktopConfig,
   generateCursorConfig

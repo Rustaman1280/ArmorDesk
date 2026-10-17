@@ -14,6 +14,8 @@ import type {
   ScenarioRunResponse,
   CTFSubmitResponse,
   VoiceBriefingResponse,
+  LoginResponse,
+  MCPStatusResponse,
 } from "./types.js";
 import {
   canonicalJson,
@@ -22,13 +24,15 @@ import {
   verifyMerkleRoot,
   verifyProof,
 } from "./crypto.js";
+import { loadStoredConfig, saveStoredConfig } from "./config.js";
 
 export class ArmorDeskClient {
-  readonly baseUrl: string;
-  readonly apiKey?: string;
-  readonly tenantId: string;
-  readonly userName: string;
-  readonly userRole: string;
+  baseUrl: string;
+  apiKey?: string;
+  tenantId: string;
+  userName: string;
+  userRole: string;
+  token?: string;
   private readonly _fetch: typeof fetch;
 
   public readonly crypto = {
@@ -40,9 +44,12 @@ export class ArmorDeskClient {
   };
 
   constructor(options: ArmorDeskClientOptions = {}) {
+    const stored = typeof process !== "undefined" ? loadStoredConfig() : {};
+
     this.baseUrl = (
       options.baseUrl ||
       (typeof process !== "undefined" && process.env?.ARMORDESK_URL) ||
+      stored.baseUrl ||
       "https://armordesk.crusts.dev"
     ).replace(/\/$/, "");
 
@@ -50,11 +57,13 @@ export class ArmorDeskClient {
       options.apiKey ||
       (typeof process !== "undefined"
         ? process.env?.ARMORIQ_API_KEY || process.env?.ARMORIQ_PRO_API_KEY
-        : undefined);
+        : undefined) ||
+      stored.apiKey;
 
-    this.tenantId = options.tenantId || "acme-corp";
-    this.userName = options.userName || "Sarah Chen";
-    this.userRole = options.userRole || "manager";
+    this.token = stored.token;
+    this.tenantId = options.tenantId || stored.tenant?.id || "acme-corp";
+    this.userName = options.userName || stored.user?.name || "Sarah Chen";
+    this.userRole = options.userRole || stored.user?.role || "manager";
     this._fetch = options.fetch || globalThis.fetch.bind(globalThis);
   }
 
@@ -69,7 +78,9 @@ export class ArmorDeskClient {
       ...(options.headers as Record<string, string>),
     };
 
-    if (this.apiKey) {
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
+    } else if (this.apiKey) {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
       headers["X-ArmorIQ-API-Key"] = this.apiKey;
     }
@@ -92,6 +103,79 @@ export class ArmorDeskClient {
     }
 
     return res.json() as Promise<T>;
+  }
+
+  /**
+   * Authenticate with an ArmorDesk account and persist credentials
+   */
+  async login(
+    email: string,
+    password: string = "admin",
+    tenantId?: string
+  ): Promise<LoginResponse> {
+    const res = await this.request<LoginResponse>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
+        tenant_id: tenantId || this.tenantId,
+      }),
+    });
+
+    if (res.user && res.token) {
+      this.token = res.token;
+      this.userName = res.user.name;
+      this.userRole = res.user.role;
+      if (res.tenant?.id) {
+        this.tenantId = res.tenant.id;
+      }
+
+      if (typeof process !== "undefined") {
+        saveStoredConfig({
+          baseUrl: this.baseUrl,
+          token: res.token,
+          user: res.user,
+          tenant: res.tenant,
+          apiKey: this.apiKey,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    return res;
+  }
+
+  /**
+   * Check live status and ping telemetry of Governed MCP Gateway
+   */
+  async getMCPStatus(): Promise<MCPStatusResponse> {
+    return this.request<MCPStatusResponse>("/api/mcp/ping", {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Comprehensive MCP diagnostic: measures latency, pings gateway, and tests tool readiness
+   */
+  async checkMCP(tenantId?: string): Promise<{
+    connected: boolean;
+    latencyMs: number;
+    ping: MCPStatusResponse;
+    config: MCPGatewayConfig;
+  }> {
+    const start = Date.now();
+    const ping = await this.getMCPStatus();
+    const latencyMs = Date.now() - start;
+    const config = await this.getMCPConfig(tenantId || this.tenantId);
+
+    const connected = ping.status === "CONNECTED" && config.governed_tools.length > 0;
+
+    return {
+      connected,
+      latencyMs,
+      ping,
+      config,
+    };
   }
 
   /**

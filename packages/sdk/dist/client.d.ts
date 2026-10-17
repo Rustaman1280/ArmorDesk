@@ -1,11 +1,12 @@
-import type { ArmorDeskClientOptions, ArmorDeskStatus, TenantInfo, TraceItem, ApprovalItem, ReceiptItem, VerifyProofRequest, VerifyProofResponse, MCPGatewayConfig, MCPCallResponse, ScenarioRunResponse, CTFSubmitResponse, VoiceBriefingResponse } from "./types.js";
+import type { ArmorDeskClientOptions, ArmorDeskStatus, TenantInfo, TraceItem, ApprovalItem, ReceiptItem, VerifyProofRequest, VerifyProofResponse, MCPGatewayConfig, MCPCallResponse, ScenarioRunResponse, CTFSubmitResponse, VoiceBriefingResponse, LoginResponse, MCPStatusResponse } from "./types.js";
 import { canonicalJson, generatePlanHash, buildMerkleTree, verifyMerkleRoot, verifyProof } from "./crypto.js";
 export declare class ArmorDeskClient {
-    readonly baseUrl: string;
-    readonly apiKey?: string;
-    readonly tenantId: string;
-    readonly userName: string;
-    readonly userRole: string;
+    baseUrl: string;
+    apiKey?: string;
+    tenantId: string;
+    userName: string;
+    userRole: string;
+    token?: string;
     private readonly _fetch;
     readonly crypto: {
         canonicalJson: typeof canonicalJson;
@@ -16,6 +17,23 @@ export declare class ArmorDeskClient {
     };
     constructor(options?: ArmorDeskClientOptions);
     private request;
+    /**
+     * Authenticate with an ArmorDesk account and persist credentials
+     */
+    login(email: string, password?: string, tenantId?: string): Promise<LoginResponse>;
+    /**
+     * Check live status and ping telemetry of Governed MCP Gateway
+     */
+    getMCPStatus(): Promise<MCPStatusResponse>;
+    /**
+     * Comprehensive MCP diagnostic: measures latency, pings gateway, and tests tool readiness
+     */
+    checkMCP(tenantId?: string): Promise<{
+        connected: boolean;
+        latencyMs: number;
+        ping: MCPStatusResponse;
+        config: MCPGatewayConfig;
+    }>;
     /**
      * Health and runtime operational telemetry
      */

@@ -2,6 +2,63 @@
  * TypeScript Type Definitions for ArmorDesk SDK
  */
 
+export interface StoredConfig {
+  baseUrl?: string;
+  token?: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    title: string;
+    avatar: string;
+    tenant_id: string;
+    scopeSummary: string;
+  };
+  tenant?: {
+    id: string;
+    name: string;
+    spend_limit: number;
+    balance: number;
+    currency: string;
+  };
+  apiKey?: string;
+  updatedAt?: string;
+}
+
+export interface LoginResponse {
+  status: string;
+  token: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    title: string;
+    avatar: string;
+    tenant_id: string;
+    scopeSummary: string;
+  };
+  tenant: {
+    id: string;
+    name: string;
+    spend_limit: number;
+    balance: number;
+    currency: string;
+  };
+}
+
+export interface MCPStatusResponse {
+  status: string;
+  gateway: string;
+  version: string;
+  protocol: string;
+  governance: string;
+  latency_ms: number;
+  active_sandboxes: string[];
+  timestamp: string;
+}
+
 export interface ArmorDeskClientOptions {
   /**
    * Base URL of ArmorDesk Control Plane instance

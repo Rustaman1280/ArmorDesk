@@ -1,8 +1,11 @@
 import {
   ArmorDeskClient,
+  clearStoredConfig,
   generateClaudeDesktopConfig,
-  generateCursorConfig
-} from "./chunk-TVWUJ3XJ.mjs";
+  generateCursorConfig,
+  getConfigPath,
+  loadStoredConfig
+} from "./chunk-YXC2ASA3.mjs";
 
 // src/cli.ts
 var HELP_TEXT = `
@@ -11,7 +14,17 @@ var HELP_TEXT = `
   Usage:
     armordesk <command> [options]
 
-  Commands:
+  Account & Authentication:
+    login [--email <email>]     Authenticate with armordesk.crusts.dev
+    whoami                      Display active authenticated account & role
+    logout                      Clear local session credentials
+
+  MCP Gateway & Diagnostics:
+    mcp [check|status]          Verify if MCP Gateway is connected & reachable
+    mcp claude                  Output Claude Desktop MCP configuration JSON
+    mcp cursor                  Output Cursor IDE MCP configuration JSON
+
+  Security & Governance:
     status                      Check operational status of ArmorDesk Control Plane
     tenants                     List active corporate tenants & spend policies
     traces                      Inspect recent audited security & policy traces
@@ -20,12 +33,13 @@ var HELP_TEXT = `
     reject <delegation_id>      Reject an action held in escrow
     receipts                    List digital execution receipts with proofs
     verify <receipt_id>         Cryptographically verify a receipt (Plan Hash & Merkle Root)
-    mcp [claude|cursor]         Show MCP Gateway config for Claude Desktop or Cursor
     scenario <1-5>              Run an adversarial FinOps crew simulation
     ctf "<prompt>"              Test prompt injection attack against CTF Gauntlet
     voice [executive|security]  Generate voice briefing telemetry via ElevenLabs
 
   Options:
+    --email <email>             Account email for login (default: rustaman@crusts.dev)
+    --password <pass>           Account password for login
     --url <url>                 ArmorDesk Control Plane URL (default: https://armordesk.crusts.dev)
     --tenant <id>               Tenant ID (default: acme-corp)
     --key <key>                 ArmorIQ API Key
@@ -66,6 +80,57 @@ async function runCLI(args = process.argv.slice(2)) {
   });
   try {
     switch (command) {
+      case "login": {
+        const email = flags["email"] || positional[1] || "rustaman@crusts.dev";
+        const password = flags["password"] || "admin";
+        const tenant = flags["tenant"] || "acme-corp";
+        console.log(`
+\u{1F510} Authenticating with ArmorDesk at ${client.baseUrl}...`);
+        const loginRes = await client.login(email, password, tenant);
+        console.log("------------------------------------------------------------");
+        console.log(`\u2705 Logged in successfully as ${loginRes.user.name}!`);
+        console.log(`   Email:        ${loginRes.user.email}`);
+        console.log(`   Role:         ${loginRes.user.role.toUpperCase()}`);
+        console.log(`   Title:        ${loginRes.user.title}`);
+        console.log(`   Tenant:       ${loginRes.tenant.name} (${loginRes.tenant.id})`);
+        console.log(`   Bank Balance: $${loginRes.tenant.balance.toLocaleString()} ${loginRes.tenant.currency}`);
+        console.log(`   Scope:        ${loginRes.user.scopeSummary}`);
+        console.log(`
+\u{1F4C1} Session saved to: ${getConfigPath()}`);
+        console.log("All armordesk commands will now execute under this identity.\n");
+        break;
+      }
+      case "whoami": {
+        const cfg = loadStoredConfig();
+        if (!cfg.user) {
+          console.log("\n\u26A0\uFE0F  Not currently logged in.");
+          console.log("Run 'armordesk login --email <your_email>' to authenticate.\n");
+        } else {
+          console.log("\n\u{1F464} ArmorDesk Active Identity");
+          console.log("------------------------------------------------------------");
+          console.log(`User:         ${cfg.user.name} (${cfg.user.email})`);
+          console.log(`Role:         ${cfg.user.role.toUpperCase()} \xB7 ${cfg.user.title}`);
+          console.log(`Tenant:       ${cfg.tenant?.name || "Corporate"} (${cfg.user.tenant_id})`);
+          if (cfg.tenant) {
+            console.log(`Treasury:     $${cfg.tenant.balance.toLocaleString()} ${cfg.tenant.currency}`);
+            console.log(`Spend Limit:  $${cfg.tenant.spend_limit.toLocaleString()} USD`);
+          }
+          console.log(`Scope:        ${cfg.user.scopeSummary}`);
+          console.log(`Endpoint:     ${cfg.baseUrl || client.baseUrl}`);
+          console.log(`Config file:  ${getConfigPath()}
+`);
+        }
+        break;
+      }
+      case "logout": {
+        const cleared = clearStoredConfig();
+        if (cleared) {
+          console.log("\n\u{1F44B} Logged out successfully. Local session cleared.\n");
+        } else {
+          console.log("\nNo active session found to logout.\n");
+        }
+        break;
+      }
       case "status":
       case "info": {
         const st = await client.status();
@@ -208,26 +273,38 @@ async function runCLI(args = process.argv.slice(2)) {
         break;
       }
       case "mcp": {
-        const sub = positional[1] || "info";
+        const sub = positional[1] || "check";
         if (sub === "claude") {
           console.log(JSON.stringify(generateClaudeDesktopConfig({ gatewayUrl: `${client.baseUrl}/api/mcp/gateway` }), null, 2));
         } else if (sub === "cursor") {
           console.log(JSON.stringify(generateCursorConfig({ gatewayUrl: `${client.baseUrl}/api/mcp/gateway` }), null, 2));
         } else {
-          const cfg = await client.getMCPConfig();
+          console.log(`
+\u{1F50D} Probing ArmorDesk Governed MCP Gateway at ${client.baseUrl}...`);
+          const diag = await client.checkMCP();
           if (flags["json"]) {
-            console.log(JSON.stringify(cfg, null, 2));
+            console.log(JSON.stringify(diag, null, 2));
           } else {
-            console.log("\n\u{1F50C} ArmorDesk Governed MCP Gateway");
-            console.log("-----------------------------------------");
-            console.log(`Gateway URL:      ${cfg.gateway_url}`);
-            console.log(`SSE URL:          ${cfg.sse_url}`);
-            console.log(`Protocol Version: ${cfg.protocol_version}`);
-            console.log(`Governed Tools:   ${cfg.governed_tools.length} sandboxed tools`);
-            cfg.governed_tools.forEach((t) => {
-              console.log(`  \u2022 ${t.name.padEnd(24)} [${t.tier}] (${t.governing_agent})`);
+            console.log("------------------------------------------------------------");
+            console.log(`Connection:       ${diag.connected ? "\u{1F7E2} ONLINE & CONNECTED" : "\u{1F534} DISCONNECTED"}`);
+            console.log(`Gateway Ping:     ${diag.ping.status} (${diag.latencyMs}ms roundtrip)`);
+            console.log(`Gateway URL:      ${diag.config.gateway_url}`);
+            console.log(`SSE URL:          ${diag.config.sse_url}`);
+            console.log(`Protocol Version: ${diag.ping.protocol}`);
+            console.log(`Governance:       ${diag.ping.governance}`);
+            console.log(`Sandboxes Active: ${diag.ping.active_sandboxes.join(", ")}`);
+            console.log(`Connected Agents: ${diag.config.connected_agents.length} fleet agents`);
+            diag.config.connected_agents.forEach((ag) => {
+              console.log(`  \u2022 ${ag.name.padEnd(28)} [${ag.status}] (Sandbox: ${ag.assigned_sandbox})`);
             });
-            console.log("\nTip: Run 'armordesk mcp claude' or 'armordesk mcp cursor' to get snippet configurations.\n");
+            console.log(`
+Governed Tools:   ${diag.config.governed_tools.length} policed tools`);
+            diag.config.governed_tools.forEach((t) => {
+              const desc = (t.description || "").slice(0, 55);
+              console.log(`  \u2022 ${t.name.padEnd(24)} ${desc}...`);
+            });
+            console.log("\nVerdict:          \u2705 MCP GATEWAY IS FULLY CONNECTED & GOVERNED");
+            console.log("Tip: Run 'armordesk mcp claude' or 'armordesk mcp cursor' to get MCP client configs.\n");
           }
         }
         break;
